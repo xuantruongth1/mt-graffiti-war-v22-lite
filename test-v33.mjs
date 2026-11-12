@@ -59,3 +59,12 @@ assert.deepEqual(wallPanPositions(1),{outgoing:-1080,incoming:0});
 assert(impactRadius({community:true,artScale:2},{kind:'shot'},2)>impactRadius({community:true},{kind:'shot'},2));
 assert(impactRadius({community:false},{kind:'bomb'},18)>impactRadius({community:false},{kind:'shot'},18));
 console.log('PASS camera: tường cũ dịch trái, tường mới vào từ phải, mép hai tường cùng tọa độ.');
+
+const {streetColors}=await import('./stage-art.mjs');
+for(const skin of ['NEON_POP','ACID_LIME','FIRE_ICE','ULTRAVIOLET','RAINBOW_STREET']){
+ const first=streetColors(skin,0),second=streetColors(skin,1);
+ assert.equal(new Set(first).size,3);
+ assert.equal(new Set([...first,...second]).size,6);
+ assert.deepEqual(streetColors(skin,6),first);
+}
+console.log('PASS màu sơn: hai phát có sáu màu phân biệt theo bảng màu, phát lại ổn định.');

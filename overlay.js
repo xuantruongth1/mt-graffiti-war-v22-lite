@@ -1,7 +1,7 @@
 import {planPainting} from './scene-plan.mjs';
 import weapons from './v2/weapon-anchors.json' with {type:'json'};
 import {faceRadius,palette,tierLevel,WALL_TOP,WALL_BOTTOM} from './stage-layout.mjs';
-import {clamp,mix,rand,disk,paintStamp,wallPanPositions,impactRadius,wallPigment} from './stage-art.mjs';
+import {clamp,mix,rand,disk,paintStamp,wallPanPositions,impactRadius,wallPigment,streetColors} from './stage-art.mjs';
 import {frameGeometry,drawFrame} from './asset-layout.mjs';
 import {manifest,tierSpecs,timeline,defaultHud,wallAsset,v2Frame,gunAsset,grenadeAsset,fxAsset,wallScale,wallRules} from './v2.mjs';
 
@@ -254,11 +254,11 @@ function coverage(m,now){
  ctx.clip();
  return art;
 }
-function impactStamp(color,seed){
- const key='pigment:'+color+':'+(seed%11);
+function impactStamp(colors,seed){
+ const key='pigment:'+colors.join('')+':'+(seed%11);
  const hit=cached(paintCache,key);if(hit)return hit;
  const tile=document.createElement('canvas');tile.width=tile.height=512;
- wallPigment(tile.getContext('2d'),color,seed%11);
+ wallPigment(tile.getContext('2d'),colors,seed%11);
  paintCache.set(key,tile);trimPixels(paintCache,32*1024*1024,24);return tile;
 }
 function landedPaint(m,now,art,visit){
@@ -271,12 +271,11 @@ function landedPaint(m,now,art,visit){
  }
 }
 function paintDeposits(m,now,art,opacity){
- const colors=palette[baseLevel(m)];
- ctx.save();ctx.globalCompositeOperation='screen';
+ ctx.save();
  landedPaint(m,now,art,(step,index,radius,spread)=>{
    const [x,y]=step.target;
-   ctx.globalAlpha=opacity*(step.kind==='bomb'?.88:.72)*(.60+spread*.4);
-   const tile=impactStamp(colors[index%colors.length],step.seed);
+   ctx.globalAlpha=opacity*(step.kind==='bomb'?.83:.76)*(.67+spread*.33);
+   const tile=impactStamp(streetColors(m.skin,index),step.seed);
    ctx.drawImage(tile,x-radius*1.3,y-radius*1.3,radius*2.6,radius*2.6);
  });
  ctx.restore();
@@ -433,10 +432,11 @@ function sprayCan(m,now){
 function spray(m,now){
  const q=plan(m),elapsed=now-m.drawStart,level=baseLevel(m),speed=q.speed??1;
  if(elapsed<0||now>=m.end)return;
- const spec=tierSpecs[level],colors=palette[level],seed=hash(m.id),quality=state.config.particles/100;
+ const spec=tierSpecs[level],seed=hash(m.id),quality=state.config.particles/100;
  const budget=low()||state.giftQueued>=15?45:240;
  if(m.canSpray)sprayCan(m,now);
- for(const step of recipe(m).steps){
+ for(const [index,step] of recipe(m).steps.entries()){
+   const colors=m.smartWall?streetColors(m.skin,index):palette[level];
    const dt=elapsed-step.at,after=elapsed-step.impact;
    if(dt<0||after>(step.kind==='shot'?spec.impactExpandMs:spec.grenadeBloomMs)/speed)continue;
    const isShot=step.kind==='shot',i=step.index,[x,y]=step.target,p=clamp(dt/(step.impact-step.at));

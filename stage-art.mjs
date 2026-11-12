@@ -41,26 +41,53 @@ export function impactRadius(mark,step,stepCount){
  return stepCount<=5?232:stepCount<=12?165:132;
 }
 
-export function wallPigment(ctx,color,seed){
- const center=256;
- const mist=ctx.createRadialGradient(center,center,18,center,center,200);
- mist.addColorStop(0,color+'bc');
- mist.addColorStop(.45,color+'7c');
+const streetPalettes={
+ NEON_POP:['#f21595','#ffce28','#00d6ed','#7839fa','#ff5c39','#a4ed3d'],
+ ACID_LIME:['#95ef22','#5d34e9','#ff8c27','#00c8b7','#fa2f8d','#ffdf52'],
+ FIRE_ICE:['#ff5a27','#1d8dff','#ffd741','#35dbdc','#ec275d','#793eef'],
+ ULTRAVIOLET:['#8d35ff','#21d5ee','#ff41a4','#ffca30','#3262ef','#68ef9e'],
+ RAINBOW_STREET:['#ff325a','#ffc533','#13d4df','#853afa','#a5e929','#ff793d']
+};
+export function streetColors(skin,index){
+ const colors=streetPalettes[skin]??streetPalettes.NEON_POP;
+ return [colors[index%6],colors[(index+2)%6],colors[(index+4)%6]];
+}
+
+function splashLobe(ctx,x,y,r,color,seed){
+ const mist=ctx.createRadialGradient(x,y,r*.12,x,y,r*1.25);
+ mist.addColorStop(0,color+'f2');
+ mist.addColorStop(.48,color+'da');
+ mist.addColorStop(.77,color+'97');
  mist.addColorStop(1,color+'00');
- ctx.fillStyle=mist;ctx.fillRect(56,56,400,400);
- for(let i=0;i<130;i++){
-   const angle=rand(seed+i*23)*Math.PI*2;
-   const length=Math.sqrt(rand(seed+i*53))*221;
-   ctx.globalAlpha=(1-length/260)*(.24+rand(seed+i*71)*.6);
-   disk(ctx,center+Math.cos(angle)*length,center+Math.sin(angle)*length,1+rand(seed+i*43)*5,color);
+ ctx.fillStyle=mist;ctx.beginPath();
+ for(let i=0;i<36;i++){
+   const angle=i*Math.PI/18,edge=r*(.68+rand(seed+i*11)*.46+(i%7===0?.19:0));
+   const px=x+Math.cos(angle)*edge,py=y+Math.sin(angle)*edge;
+   if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
  }
- ctx.globalAlpha=.55;
- ctx.strokeStyle=color;ctx.lineCap='round';
- for(let i=0;i<8;i++){
-   const x=center+(rand(seed+i*37+23)-.5)*235;
-   const y=center+45+rand(seed+i*91+2)*80;
-   ctx.lineWidth=1+rand(seed+i*61)*5;
-   ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+4,y+15,x,y+18+rand(seed+i*17)*100);ctx.stroke();
+ ctx.closePath();ctx.fill();
+}
+
+export function wallPigment(ctx,colors,seed){
+ const center=256,angle=rand(seed+39)*Math.PI*2;
+ for(const [i,color] of colors.entries()){
+   const a=angle+i*Math.PI*2/3;
+   const x=center+Math.cos(a)*76,y=center+Math.sin(a)*67;
+   splashLobe(ctx,x,y,143-i*7,color,seed+i*193);
+   for(let j=0;j<44;j++){
+     const ray=rand(seed+i*37+j*23)*Math.PI*2;
+     const distance=Math.sqrt(rand(seed+i*53+j*19))*151;
+     ctx.globalAlpha=(1-distance/180)*(.45+rand(seed+j*71)*.52);
+     disk(ctx,x+Math.cos(ray)*distance,y+Math.sin(ray)*distance,1+rand(seed+j*43)*6,color);
+   }
+   ctx.globalAlpha=.74;ctx.strokeStyle=color;ctx.lineCap='round';
+   for(let j=0;j<4;j++){
+     const dx=x+(rand(seed+i*31+j*37)-.5)*130;
+     const dy=y+42+rand(seed+i*47+j*91)*42;
+     const length=20+rand(seed+i*51+j*17)*84;
+     ctx.lineWidth=1+rand(seed+j*61)*4;
+     ctx.beginPath();ctx.moveTo(dx,dy);ctx.quadraticCurveTo(dx+3,dy+15,dx,dy+length);ctx.stroke();
+   }
+   ctx.globalAlpha=1;
  }
- ctx.globalAlpha=1;
 }
