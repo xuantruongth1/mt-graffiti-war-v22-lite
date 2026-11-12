@@ -5,13 +5,31 @@ import {paintStamp} from './stage-art.mjs';
 const $=id=>document.getElementById(id);
 const names=['Nét màu','Mưa màu','Pháo giấy','Chữ neon','Rồng sắc màu','Siêu VIP Pro','Sóng cầu vồng','Cánh phượng','Tẩy sơn','Khiên màu','Vương miện','Tia sét','Sao vàng','Cầu vồng','Portal','Tim ma thuật'];
 const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
-const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','max','fullHold','wipeMs','peak','speed'],flags=['flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
+const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','max','fullHold','wipeMs','peak','speed'],flags=['scaleTransitions','flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
 const tabs={overview:'Tổng quan & Điều khiển LIVE',gifts:'Quà & vật phẩm',props:'Skin & bom sơn',fx:'Hiệu ứng & bố cục',round:'Vòng chơi & TOP',test:'Phòng thử hiệu ứng',gallery:'Thư viện tường',log:'Nhật ký phiên'};
 let current,liveState,demoState,source='live',audio=false,settingsLoaded=false,timer;
 function el(tag,text){const x=document.createElement(tag);if(text!=null)x.textContent=text;return x;}
 function notice(text){clearTimeout(timer);$('feedback').textContent=text;timer=setTimeout(()=>$('feedback').textContent='',5500);}
+const serverOffline='Mất kết nối với máy chủ game. Mở lại MT Graffiti War V3.exe và giữ cửa sổ launcher mở.';
+function showDemoConnection(connected){
+ $('test-timeline').textContent=connected?'Phòng thử đã kết nối.':serverOffline;
+}
 async function action(action,params={},message='Đã cập nhật'){
- try{const response=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...params})});const result=await response.json();if(!response.ok)throw Error(result.error);notice(message);return true;}catch(error){notice(error.message);return false;}
+ let response;
+ try{
+   response=await fetch('/api/action',{
+     method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({action,...params}),signal:AbortSignal.timeout(10000)
+   });
+ }catch(error){
+   notice(error.name==='TimeoutError'?'Máy chủ phản hồi quá chậm. Kiểm tra hàng chờ trước khi bấm lại.':serverOffline);
+   return false;
+ }
+ try{
+   const result=await response.json();
+   if(!response.ok)throw Error(result.error||'Yêu cầu không thành công.');
+   notice(message);return true;
+ }catch(error){notice(error instanceof SyntaxError?'Máy chủ trả về phản hồi không hợp lệ. Mở Studio từ launcher.':error.message);return false;}
 }
 let gallerySource=null;
 function setSource(next){gallerySource=null;source=next;$('preview-label').textContent='Đang tải…';$('frame').src='/overlay.html?preview=1'+(next==='demo'?'&source=demo':'');$('source').textContent=next==='demo'?'Xem LIVE thật':'Xem phòng thử';}
@@ -110,11 +128,39 @@ function render(){
  if(!liveState)return;const s=liveState;
  $('status').textContent=s.status;$('m-marks').textContent=s.communityCount+' / '+s.config.max;$('m-queue').textContent=s.queue;$('m-round').textContent=s.round;
  $('top-list').replaceChildren(...s.top.map(x=>el('li',x.name+' · '+x.coins.toLocaleString('vi-VN')+' xu')));
- const logs=($('log-source').value==='demo'?demoState:liveState)?.log||[];
+ const selected=$('log-source').value==='demo'?demoState:liveState;
+ const logs=selected?.log||[];
+ const pending=selected?.pending??[],connection=selected?.connection;
+ $('pending-list').replaceChildren(...pending.map(x=>el('li',x.gift+' · ×'+x.count+' · '+new Date(x.at).toLocaleTimeString('vi-VN'))));
+ $('retry-pending').disabled=!pending.length;
+ $('connection-info').textContent=connection?'Kết nối lại '+connection.reconnects+' lượt · '+connection.errors+' lỗi'+(connection.latencyMs===null?'':' · '+connection.latencyMs+' ms'):'';
+
  $('log-list').replaceChildren(...logs.slice(0,35).map(x=>el('li',new Date(x.at).toLocaleTimeString('vi-VN')+' · '+x.name+' · '+x.item+' · '+x.coins+' xu'+(x.gift?' · ID '+x.gift:''))));
 }
 $('log-source').onchange=render;
-for(const which of ['live','demo']){const stream=new EventSource('/api/events?source='+which);stream.onmessage=e=>{const s=JSON.parse(e.data);if(which==='live'){liveState=s;if(!settingsLoaded){settingsLoaded=true;current=s.config;showConfig(true);}}else demoState=s;render();};}
+$('retry-pending').onclick=async()=>{
+ try{
+   const response=await fetch('/api/action?source='+$('log-source').value,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'retry-pending'})});
+   const result=await response.json();
+   if(!response.ok)throw Error(result.error);
+   notice('Đã kiểm tra lại danh sách quà chờ.');
+ }catch(error){notice(error.message);}
+};
+for(const which of ['live','demo']){
+ const stream=new EventSource('/api/events?source='+which);
+ if(which==='demo')stream.onerror=()=>showDemoConnection(false);
+ stream.onmessage=e=>{
+   const s=JSON.parse(e.data);
+   if(which==='live'){
+     liveState=s;
+     if(!settingsLoaded){settingsLoaded=true;current=s.config;showConfig(true);}
+   }else{
+     demoState=s;
+     showDemoConnection(true);
+   }
+   render();
+ };
+}
 
 
 addEventListener('message',event=>{if(event.origin===location.origin&&event.source===document.getElementById('frame').contentWindow&&Number.isInteger(event.data?.graffitiFps))document.getElementById('fps').textContent=event.data.graffitiIdle?'Đang chờ':event.data.graffitiFps+' FPS';});
@@ -201,4 +247,18 @@ async function refreshGallery(){
 }
 $('gallery-source').onchange=refreshGallery;
 $('gallery-refresh').onclick=refreshGallery;
+$('gallery-png').onclick=()=>{
+ if(!gallerySource){notice('Chọn tường đã lưu để tải ảnh.');return;}
+ const doc=$('frame').contentDocument;
+ const canvas=doc?.querySelector('canvas[data-ready=true]');
+ if(!canvas||!doc.location.search.includes('kind=')){notice('Đang tải tường.');return;}
+ try{
+   canvas.toBlob(blob=>{
+     if(!blob){notice('Không tạo được ảnh tường.');return;}
+     const url=URL.createObjectURL(blob),link=el('a');
+     link.href=url;link.download='MT-Graffiti-tuong.png';link.click();
+     setTimeout(()=>URL.revokeObjectURL(url),1000);
+   },'image/png');
+ }catch{notice('Ảnh đại diện từ nguồn ngoài không cho phép xuất PNG.');}
+};
 $('gallery-exit').onclick=()=>{setSource(gallerySource??source);gallerySource=null;};

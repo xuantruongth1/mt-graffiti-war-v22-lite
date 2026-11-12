@@ -1,10 +1,11 @@
 import {manifest} from './v2.mjs';
 import http from 'node:http';
-import { readFile,writeFile,mkdir,rename } from 'node:fs/promises';
+import { readFile,writeFile,mkdir,rename,copyFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { dirname,join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pathToFileURL } from 'node:url';
-import { WALL_CAPACITY,initWalls,session,ingest,tick,items,freeEffects,loadConfig } from './engine.mjs';
+import { WALL_CAPACITY,initWalls,session,ingest,retryPending,tick,items,freeEffects,loadConfig } from './engine.mjs';
 
 const root=dirname(fileURLToPath(import.meta.url));
 const data=process.env.GRAFFITI_DATA||join(process.env.LOCALAPPDATA||root,'MT-Graffiti');
@@ -13,19 +14,24 @@ const file=join(data,'studio.json');
 let saved={};
 try{saved=JSON.parse(await readFile(file,'utf8'));}catch(error){if(error.code!=='ENOENT')console.error('Không đọc được phiên đã lưu:',error.message);}
 let config=loadConfig(saved.config),live=saved.live||session(),demo=session(),connector,burst;
+if(saved.live&&!saved.live.sessionId){
+ try{await copyFile(file,join(data,'studio.pre-v3.'+Date.now()+'.json'));}catch(error){console.error('Không sao lưu được:',error.message);}
+}
 initWalls(live,config);
 let demoScenario=null,scenarioGeneration=0;
 let status='Chưa kết nối',persist=Promise.resolve(),dirty=false,sequence=0;
 const clients=new Map();
+let connection={lastEventAt:null,latencyMs:null,reconnects:0,errors:0,state:'idle'};
 
-const localConnector='E:/ChatGPT/Tiktok/shared/tiktok-live/direct-live.mjs';
+const localConnector=join(root,'adapter','direct-live.mjs');
+const sharedConnector='E:/ChatGPT/Tiktok/shared/tiktok-live/direct-live.mjs';
 const localCatalog='E:/ChatGPT/Tiktok/shared/tiktok-gift-icons/catalog.json';
 const catalogPath=process.env.GRAFFITI_CATALOG||localCatalog;
 let catalog=[];
 try{const raw=JSON.parse(await readFile(catalogPath,'utf8'));catalog=Array.isArray(raw)?raw:raw.icons||raw.gifts||raw.items||[];}catch{}
 function state(which){
  const s=which==='demo'?demo:live;
- return {config,marks:s.marks,scene:s.scene,pending:s.pending??[],wallMode:s.wallMode,communityCount:s.community.marks.length,giftQueued:s.queue.filter(x=>x.coins).length,top:Object.values(s.scores).filter(x=>x.coins).sort((a,b)=>b.coins-a.coins).slice(0,5),log:s.log,queue:s.queue.length,wallNumber:s.wallNumber??1,wallMove:s.wallMove??null,round:s.round,ends:s.ends,winners:s.winners,winningTeam:s.winningTeam,teams:s.teams,status};
+ return {config,serverTime:Date.now(),connection,marks:s.marks,scene:s.scene,pending:(s.pending??[]).map(({gift,uid,at,count})=>({gift,uid,at,count})),wallMode:s.wallMode,communityCount:s.community.marks.length,giftQueued:s.queue.filter(x=>x.coins).length,top:Object.values(s.scores).filter(x=>x.coins).sort((a,b)=>b.coins-a.coins).slice(0,5),log:s.log,queue:s.queue.length,wallNumber:s.wallNumber??1,wallMove:s.wallMove??null,round:s.round,ends:s.ends,winners:s.winners,winningTeam:s.winningTeam,teams:s.teams,status};
 }
 function broadcast(){
  const cache={};
@@ -80,7 +86,7 @@ const server=http.createServer(async(req,res)=>{
    const result={...state(which),wallMode:kind==='donor'?'gift':'community',wallNumber:entry.number??data.wallNumber,
       marks:mark?[mark]:entry.marks,scene:null,wallMove:null,top:[],winners:[],winningTeam:'',communityCount:entry.marks?.length??0};
    if(mark&&url.searchParams.get('replay')==='1'){
-    const duration=mark.sequence?.duration??850,drawStart=now+500;
+    const duration=Math.max(mark.sequence?.duration??850,mark.land-mark.drawStart),drawStart=now+500;
     const animated={...mark,id:'replay-'+now,start:now,drawStart,land:drawStart+duration,end:drawStart+duration+4500};
     result.scene={...animated,art:animated};result.marks=[animated];
    }
@@ -98,15 +104,31 @@ const server=http.createServer(async(req,res)=>{
   let body='';for await(const chunk of req){body+=chunk;if(body.length>32000)throw Error('Dữ liệu quá lớn.');}
   const a=JSON.parse(body);
   if(a.action==='connect'){
-   const {DirectLive}=await import(pathToFileURL(process.env.GRAFFITI_CONNECTOR||localConnector).href);
+   let DirectLive;
+   try{({DirectLive}=await import(pathToFileURL(process.env.GRAFFITI_CONNECTOR||(existsSync(localConnector)?localConnector:sharedConnector)).href));}
+   catch{throw Error('Thiếu adapter TikTok LIVE. Đặt GRAFFITI_CONNECTOR trỏ đến module DirectLive tương thích, rồi khởi động lại.');}
+   if(typeof DirectLive!=='function')throw Error('Adapter cần export lớp DirectLive.');
    const next=new DirectLive(a.username);
    const old=connector;connector=next;
    void old?.disconnect();
-   next.on('status',x=>{if(connector!==next)return;status=x.message;broadcast();});
-   next.on('event',({event,data:d})=>{if(connector!==next)return;ingest(live,config,event,d);dirty=true;broadcast();});
+   next.on('status',x=>{
+     if(connector!==next)return;
+     if(x.state==='retry'&&connection.state!=='retry')connection.reconnects++;
+     if(x.state==='error'&&connection.state!=='error')connection.errors++;
+     connection.state=x.state;status=x.message;broadcast();
+   });
+   next.on('event',({event,data:d})=>{
+     if(connector!==next)return;
+     const now=Date.now(),timestamp=Number(d.serverTimestamp??d.common?.createTime??0);
+     connection.lastEventAt=now;connection.latencyMs=timestamp>0?Math.max(0,now-(timestamp<1e12?timestamp*1000:timestamp)):null;
+     ingest(live,config,event,d,now);dirty=true;broadcast();
+   });
    void next.connect();
+  }else if(a.action==='retry-pending'){
+   const result=retryPending(which==='demo'?demo:live,config);
+   dirty=true;broadcast();save();return json(res,{ok:true,...result});
   }else if(a.action==='disconnect'){
-   const old=connector;connector=null;void old?.disconnect();status='Đã ngắt kết nối';
+   const old=connector;connector=null;void old?.disconnect();connection.state='idle';status='Đã ngắt kết nối';
   }else if(a.action==='test'){
    const n=Number(a.coins);if(!Number.isInteger(n)||n<1||n>1000000)throw Error('Số xu không hợp lệ.');
    testGift(n);
@@ -151,7 +173,7 @@ const server=http.createServer(async(req,res)=>{
    const slots=v.slots;
    if(!Array.isArray(slots)||slots.length!==6||slots.some(p=>!Number.isFinite(p.x)||p.x<155||p.x>786||!Number.isFinite(p.y)||p.y<600||p.y>944)||slots.some((p,i)=>slots.slice(0,i).some(q=>Math.abs(p.x-q.x)<275&&Math.abs(p.y-q.y)<260)))throw Error('Các ô phải nằm trên tường và có khoảng cách an toàn.');
    if(rows.some(r=>!Number.isFinite(r.hold)||r.hold<1||r.hold>20))throw Error('Kiểm tra thời gian vinh danh.');
-   config={version:2.2,perfRevision:1,slots,fullHold:number('fullHold',2500,15000),wipeMs:number('wipeMs',300,1600),peak:number('peak',290,315),speed:number('speed',.5,2),rows,free,mapping,values,minutes,gun:Math.trunc(number('gun',-1,9)),grenade:Math.trunc(number('grenade',-1,9)),gunScale:number('gunScale',.35,1),muzzleX:number('muzzleX',0,941),muzzleY:number('muzzleY',0,1672),fps:Number(v.fps)===30?30:60,topWidth:number('topWidth',220,600),topX:number('topX',0,1080),topY:number('topY',130,1610),showGun:!!v.showGun,sparks:!!v.sparks,shake:!!v.shake,glow:!!v.glow,mixSpray:!!v.mixSpray,accumulate:!!v.accumulate,particles:number('particles',0,100),volume:number('volume',0,100),safe:number('safe',0,10),max:[4,5,6].includes(Number(v.max))?Number(v.max):WALL_CAPACITY,top:!!v.top,flash:!!v.flash,teams:!!v.teams,anonymous:!!v.anonymous};dirty=true;
+   config={version:3,perfRevision:1,scaleTransitions:!!v.scaleTransitions,slots,fullHold:number('fullHold',2500,15000),wipeMs:number('wipeMs',300,1600),peak:number('peak',290,315),speed:number('speed',.5,2),rows,free,mapping,values,minutes,gun:Math.trunc(number('gun',-1,9)),grenade:Math.trunc(number('grenade',-1,9)),gunScale:number('gunScale',.35,1),muzzleX:number('muzzleX',0,941),muzzleY:number('muzzleY',0,1672),fps:Number(v.fps)===30?30:60,topWidth:number('topWidth',220,600),topX:number('topX',0,1080),topY:number('topY',130,1610),showGun:!!v.showGun,sparks:!!v.sparks,shake:!!v.shake,glow:!!v.glow,mixSpray:!!v.mixSpray,accumulate:!!v.accumulate,particles:number('particles',0,100),volume:number('volume',0,100),safe:number('safe',0,10),max:[4,5,6].includes(Number(v.max))?Number(v.max):WALL_CAPACITY,top:!!v.top,flash:!!v.flash,teams:!!v.teams,anonymous:!!v.anonymous};dirty=true;
   }else throw Error('Lệnh không hợp lệ.');
   broadcast();save();return json(res,{ok:true});
  }
@@ -161,7 +183,7 @@ const server=http.createServer(async(req,res)=>{
   res.writeHead(200,{'Content-Type':'image/png','X-Content-Type-Options':'nosniff','Cache-Control':'public,max-age=3600'});return res.end(bytes);
  }
  const name=url.pathname==='/'?'index.html':url.pathname.slice(1);
- if(req.method!=='GET'||!/^(?:index\.html|overlay\.html|studio\.js|overlay\.js|stage-layout\.mjs|stage-art\.mjs|courtyard\.jpg|asset-layout\.mjs|v2\.mjs|v2\/(?:lite\/[A-Z0-9_a-z]+\.webp|[a-z_]+\.json|wall\.png|(?:frames|guns|grenades|fx)\/[A-Z0-9_a-z]+\.png)|vi_tri_avatar_va_ten\.json|(?:01_Binh_Luan|02_1_Xu|03_5_Xu|04_20_Xu|05_100_Xu|06_500_Xu|07_1000_Xu_VIP_PRO)\.png|studio\.css)$/.test(name))return json(res,{error:'Không tìm thấy.'},404);
+ if(req.method!=='GET'||!/^(?:index\.html|overlay\.html|studio\.js|overlay\.js|stage-layout\.mjs|stage-art\.mjs|courtyard\.jpg|asset-layout\.mjs|scene-plan\.mjs|v2\.mjs|v2\/(?:lite\/[A-Z0-9_a-z]+\.webp|hands\/[a-z_]+\.webp|[a-z_-]+\.json|wall\.png|(?:frames|guns|grenades|fx)\/[A-Z0-9_a-z]+\.png)|vi_tri_avatar_va_ten\.json|(?:01_Binh_Luan|02_1_Xu|03_5_Xu|04_20_Xu|05_100_Xu|06_500_Xu|07_1000_Xu_VIP_PRO)\.png|studio\.css)$/.test(name))return json(res,{error:'Không tìm thấy.'},404);
  const contents=await readFile(join(root,name));
  res.writeHead(200,{'Content-Type':mime[name.slice(name.lastIndexOf('.'))],'X-Content-Type-Options':'nosniff','Cache-Control':name.startsWith('v2/lite/')?'public,max-age=86400':'no-cache'});
  res.end(contents);

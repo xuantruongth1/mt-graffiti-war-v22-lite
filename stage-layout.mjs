@@ -1,6 +1,5 @@
 import { frameGeometry } from './asset-layout.mjs';
 export const WALL_TOP=467,WALL_BOTTOM=1300;
-export const isMural=(coins,tier)=>Boolean(coins)&&tier>=3;
 export const tierLevel=(coins,tier)=>coins?Math.min(tier+1,6):0;
 export const palette=[
  ['#ff188a','#ff77b9','#ffb3d8'],

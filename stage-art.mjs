@@ -1,5 +1,3 @@
-import {palette,WALL_TOP,WALL_BOTTOM} from './stage-layout.mjs';
-
 export const mix=(a,b,t)=>a+(b-a)*t;
 export const clamp=(t)=>Math.max(0,Math.min(1,t));
 export const rand=(i)=>{const v=Math.sin(i*127.1+311.7)*43758.5453;return v-Math.floor(v);};
@@ -30,24 +28,4 @@ export function paintStamp(ctx,x,y,r,colors,seed,detail){
    }
  }
  ctx.restore();
-}
-export function makeMural(level,lite=false){
- const h=WALL_BOTTOM-WALL_TOP,art=document.createElement('canvas');const scale=lite?.5:1;art.width=1080*scale;art.height=Math.ceil(h*scale);
- const g=art.getContext('2d');g.scale(scale,scale);const p=palette[level],b=g.createLinearGradient(0,0,1080,h);
- b.addColorStop(0,'#231247');b.addColorStop(.48,level===4?'#512775':'#301257');b.addColorStop(1,'#18193e');
- g.fillStyle=b;g.fillRect(0,0,1080,h);
- for(let i=0;i<20;i++){
-   const column=i%5,row=Math.floor(i/5),x=column*248-25+rand(i*13)*120,y=row*272-20+rand(i*27)*151;
-   g.globalAlpha=.69+rand(i*23)*.24;
-   paintStamp(g,x,y,105+rand(i*11)*151,[p[i%3],p[(i+1)%3],p[(i+2)%3]],i+level*83,level);
- }
- g.globalAlpha=1;
- const mid=g.createRadialGradient(540,h*.47,150,540,h*.47,520);
- mid.addColorStop(0,'#160829ac');mid.addColorStop(1,'#16082900');g.fillStyle=mid;g.fillRect(0,0,1080,h);
- for(let i=0;i<(lite?300:1100);i++){
-   const x=rand(i*3+level)*1080,y=rand(i*9+level)*h;
-   g.globalAlpha=.13+rand(i*17)*.45;disk(g,x,y,.3+rand(i*5)*2.5,i%3?p[i%3]:'#ffe5ff');
- }
- g.globalAlpha=1;
- return art;
 }

@@ -1,6 +1,7 @@
+import {planPainting,TIMELINE_VERSION} from './scene-plan.mjs';
 import { randomUUID } from 'node:crypto';
 import {manifest,tierSpecs,shotGaps,shotCounts,timeline,wallRules,wallScale} from './v2.mjs';
-import { extent,isMural,WALL_TOP,WALL_BOTTOM } from './stage-layout.mjs';
+import { extent,WALL_TOP,WALL_BOTTOM } from './stage-layout.mjs';
 
 export const names=['Nét màu','Mưa màu','Pháo giấy','Chữ neon','Rồng sắc màu','Siêu VIP Pro'];
 export const WALL_CAPACITY=wallRules.communityWall.hardMaxAvatars;
@@ -10,7 +11,7 @@ export const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
 export const items=[...names,'Sóng cầu vồng','Cánh phượng','Tẩy sơn','Khiên màu','Vương miện','Tia sét','Sao vàng','Cầu vồng','Portal','Tim ma thuật'];
 const timingDefaults=(i)=>({life:tierSpecs[i].holdSeconds,seconds:tierSpecs[i].durationMs/1000,shots:shotCounts[i],gap:shotGaps[i],bombs:tierSpecs[i].grenades,flight:tierSpecs[i].shotFlightMs,bombFlight:tierSpecs[i].grenadeFlightMs,recoil:tierSpecs[i].weaponAnimation?.recoilDistancePx??8,skin:'auto'});
 export const defaults={
-  version:2.2,perfRevision:1,speed:1,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
+  version:3,perfRevision:1,speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
   gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,fps:30,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
   free:{...timingDefaults(0),effect:'Nét tên'},
   rows:tierSpecs.slice(1).map((spec,i)=>({...timingDefaults(i+1),min:spec.minimum,size:[230,300,375,450,635,850][i],effect:names[i],hold:donorHolds[i]})),
@@ -31,18 +32,19 @@ export function loadConfig(saved={}){
     return next;
   };
   const quality=stored.perfRevision===1?{}:{fps:defaults.fps,particles:Math.min(defaults.particles,stored.particles??defaults.particles),shake:false};
-  return {...defaults,...stored,...quality,perfRevision:1,version:2.2,max:[4,5,6].includes(saved.max)&&saved.version===2.2?saved.max:WALL_CAPACITY,mapping,free:{...defaults.free,...migration(saved.free,0),shots:1,gap:0,bombs:0},
+  return {...defaults,...stored,...quality,perfRevision:1,version:3,max:[4,5,6].includes(saved.max)&&saved.version>=2.2?saved.max:WALL_CAPACITY,mapping,free:{...defaults.free,...migration(saved.free,0),shots:1,gap:0,bombs:0},
     rows:defaults.rows.map((base,i)=>{const row={...base,...migration(rows?.[i],i+1)};if(row.size===[140,210,300,410,600,830][i])row.size=base.size;
       if(row.min===[1,5,20,80,500,3000][i])row.min=base.min;return row;})};
 }
-export function session(){return {marks:[],scores:{},log:[],queue:[],scene:null,round:1,wallNumber:1,wallMove:null,community:{marks:[],fullAt:0,pausedAt:null},pages:[],donors:{},wallMode:'community',giftRun:0,ends:0,winners:[],seen:[],combos:{},pending:[],teams:[0,0]};}
+export function session(){return {sessionId:randomUUID(),marks:[],scores:{},log:[],queue:[],scene:null,round:1,wallNumber:1,wallMove:null,community:{marks:[],fullAt:0,pausedAt:null},pages:[],donors:{},wallMode:'community',giftRun:0,ends:0,winners:[],seen:[],combos:{},pending:[],teams:[0,0]};}
 const palette=['#29e9e6','#fb49a9','#ffbc3e','#a280ff','#87ef5a','#ff6350'];
 
 export function ingest(s,c,type,d,now=Date.now()){
   const uid=String(d.userId||'').slice(0,90);
   if(!uid||!['gift','chat'].includes(type))return;
   if(type==='chat'&&!String(d.comment||'').trim())return;
-  if(type==='gift'&&d.giftType==1&&d.repeatEnd!==true)return;
+  if(type==='gift'&&d.giftType==1&&d.repeatEnd===false)return;
+  if(type==='gift'&&d.giftType==1&&d.repeatEnd==null&&!(d.comboId||d.groupId||d.group_id))return;
   const key=d.msgId&&d.msgId!=='0'?type+'|'+d.msgId:'';
   if(key&&s.seen.includes(key))return;
   const prior=Object.hasOwn(s.scores,uid)?s.scores[uid]:null;
@@ -51,12 +53,17 @@ export function ingest(s,c,type,d,now=Date.now()){
     return;
   }
   const count=Math.trunc(Number(d.repeatCount??1)),giftId=String(d.giftId||'');
-  const unit=Number(d.diamondCount)||Number(Object.hasOwn(c.values,giftId)?c.values[giftId]:0);
+  const reported=Number(d.diamondCount);
+  const unit=Number.isSafeInteger(reported)&&reported>0?reported:Number(Object.hasOwn(c.values,giftId)?c.values[giftId]:0);
   let coins=0,comboTotal=0;
   if(type==='gift'){
     if(!Number.isSafeInteger(unit)||unit<1||!Number.isSafeInteger(count)||count<1){
-      s.pending??=[];s.pending.unshift({gift:giftId,uid,at:now,count:Number.isFinite(count)?count:0});s.pending.length=Math.min(100,s.pending.length);
-      if(key){s.seen.push(key);if(s.seen.length>12000)s.seen.shift();}
+      s.pending??=[];if(!key||!s.pending.some(p=>p.eventKey===key)){
+        s.pending.unshift({gift:giftId,uid,at:now,count:Number.isFinite(count)?count:0,eventKey:key,
+          event:{userId:uid,msgId:d.msgId,giftId,repeatCount:count,giftType:d.giftType,repeatEnd:d.repeatEnd,
+            comboId:d.comboId||d.groupId||d.group_id,nickname:String(d.nickname||'').slice(0,100),profilePictureUrl:String(d.profilePictureUrl||'').slice(0,2048)}});
+        s.pending.length=Math.min(1000,s.pending.length);
+      }
       return;
     }
     const group=d.comboId||d.groupId||d.group_id;
@@ -71,6 +78,7 @@ export function ingest(s,c,type,d,now=Date.now()){
     }
   }
   if(key){s.seen.push(key);if(s.seen.length>12000)s.seen.shift();}
+  if(type==='gift'&&key&&s.pending?.some(p=>p.eventKey===key))s.pending=s.pending.filter(p=>p.eventKey!==key);
   if(type==='gift'&&!coins)return;
   const name=Array.from(String(d.nickname||'Họa sĩ').replace(/[\x00-\x1f]/g,'')).slice(0,32).join('');
   let avatar='';
@@ -83,12 +91,23 @@ export function ingest(s,c,type,d,now=Date.now()){
   const ranked=coins?(c.accumulate?(prior?.coins||0)+coins:Math.max(total,comboTotal)):0;
   const tier=coins?Math.max(0,c.rows.findLastIndex(row=>ranked>=row.min)):0;
   const item=coins?(Object.hasOwn(c.mapping,d.giftId)?c.mapping[d.giftId]:c.rows[tier].effect):c.free.effect;
-  const job={id:randomUUID(),uid,name,avatar,coins:total,ranked,tier,item,at:now,team,color:c.teams?(team?'#31a8ff':'#ff4d78'):palette[Math.floor(Math.random()*palette.length)]};
+  const job={id:randomUUID(),uid,name,avatar,eventId:key||undefined,coins:total,ranked,tier,item,at:now,team,color:c.teams?(team?'#31a8ff':'#ff4d78'):palette[Math.floor(Math.random()*palette.length)]};
   if(pending)Object.assign(pending,job);else if(coins||!s.queue.some(p=>p.uid===uid&&!p.coins))s.queue.push(job);
   s.log.unshift({name,coins,item,at:now,gift:String(d.giftId||''),count:d.repeatCount??1});
   s.log.length=Math.min(150,s.log.length);
 }
+export function retryPending(s,c,now=Date.now()){
+ const backlog=s.pending??[];s.pending=[];
+ let resolved=0,expired=0;
+ for(const row of backlog.slice().reverse()){
+   if(now-row.at>86400000){expired++;continue;}
+   if(!row.event||!Object.hasOwn(c.values,row.gift)||row.count<1){s.pending.unshift(row);continue;}
+   ingest(s,c,'gift',row.event,now);resolved++;
+ }
+ return {resolved,expired};
+}
 export function initWalls(s,c,now=Date.now()){
+  s.sessionId??=randomUUID();
   if(s.community)return;
   const legacy=s.marks??[];
   s.community={marks:[],fullAt:0,pausedAt:null};s.pages=[];s.donors={};s.wallMode='community';s.giftRun=0;
@@ -109,8 +128,8 @@ function slotPosition(slot,c){
     nameY:(p.y+original.nicknameCenterPx.y-original.avatarCenterPx.y)*wallScale};
 }
 function transition(s,c,kind,marks,now){
-  const spec=transitions[kind],duration=kind==='communityFullToBlank'?c.wipeMs:spec.durationMs;
-  const blank=spec.showBlankWallBrieflyMs??0;
+  const spec=transitions[kind],duration=(kind==='communityFullToBlank'?c.wipeMs:spec.durationMs)/(c.scaleTransitions?c.speed:1);
+  const blank=(spec.showBlankWallBrieflyMs??0)/(c.scaleTransitions?c.speed:1);
   s.wallMove={kind,oldMarks:s.marks,start:now,fadeEnd:now+duration,end:now+duration+blank};
   s.marks=marks;
 }
@@ -125,11 +144,12 @@ function displayJob(s,c,job,now){
   const level=job.coins?job.tier+1:0,setting=job.coins?c.rows[job.tier]:c.free;
   const seed=Array.from(job.id).reduce((sum,x)=>sum+x.charCodeAt(0),0);
   const sequence=timeline(level,setting,c.speed);
-  const start=now,drawStart=now+(job.coins?220:55)/c.speed,land=drawStart+sequence.duration;
+  const start=now,drawStart=now+(job.coins?220:90)/c.speed;
+  let land=drawStart+sequence.duration;
   const hold=job.coins?(s.queue.length>=15?1:setting.hold??donorHolds[job.tier])*1000:0;
-  const end=land+hold;
+
   const skin=manifest.skins.includes(setting.skin)?setting.skin:manifest.skins[seed%manifest.skins.length];
-  const common={...job,start,drawStart,land,end,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
+  const common={...job,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
     recoil:setting.recoil,canSpray:c.mixSpray&&level>0&&level<3&&seed%5===0};
   if(job.coins){
     const tier=Math.max(job.tier,donor?.tier??0);
@@ -137,12 +157,19 @@ function displayJob(s,c,job,now){
     const size=c.rows[tier].size,frame=extent(job.coins,tier,size);
     const mark={...common,tier,size,wallId,skin:tier>job.tier?old.skin:skin,
       x:540+(frame.left-frame.right)/2,y:(WALL_TOP+WALL_BOTTOM+frame.top-frame.bottom)/2};
+    mark.wallTier=tier+1;mark.presentationTier=tier+1;
+    mark.painting=planPainting(mark,sequence);
+    land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed);
+    Object.assign(mark,{land,end:land+hold});
     Object.defineProperty(s.donors,job.uid,{enumerable:true,configurable:true,writable:true,value:{uid:job.uid,name:job.name,tier,wallId,mark}});
     s.marks=[mark];s.donorUid=job.uid;s.giftRun++;
-    s.scene={...common,x:mark.x,y:mark.y,size,wallId,art:mark,before:old??null};
+    s.scene={...common,land,end:mark.end,wallTier:mark.wallTier,presentationTier:mark.presentationTier,painting:mark.painting,x:mark.x,y:mark.y,size,wallId,art:mark,before:old??null};
   }else{
     const slot=old?.slot??s.community.marks.length;
     const mark={...common,...slotPosition(slot,c),slot,community:true,size:181};
+    mark.painting=planPainting(mark,sequence);
+    land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed);
+    Object.assign(mark,{land,end:land});
     s.community.marks=old?s.community.marks.map(m=>m.uid===job.uid?mark:m):[...s.community.marks,mark];
     if(!old&&s.community.marks.length>=c.max)s.community.fullAt=land;
     s.marks=s.community.marks;s.scene={...mark,before:old??null};

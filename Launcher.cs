@@ -24,7 +24,7 @@ static class GraffitiLauncher
         Process service = null;
         StreamWriter control = null;
         var form = new Form {
-            Text = "MT Graffiti War V2.2 Lite", ClientSize = new Size(510, 176),
+            Text = "MT Graffiti War V3", ClientSize = new Size(510, 176),
             StartPosition = FormStartPosition.CenterScreen,
             FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false
         };
@@ -68,7 +68,7 @@ static class GraffitiLauncher
             if (url != null) return;
             if (started.Elapsed.TotalSeconds >= 20) {
                 timer.Stop();
-                status.Text = "Máy chủ chưa phản hồi. Kiểm tra thư mục app, runtime và quyền ghi thư mục dữ liệu.";
+                status.Text = "Máy chủ chưa chạy. Kiểm tra cổng 3197, thư mục app, runtime và quyền ghi dữ liệu.";
                 return;
             }
             try {
@@ -101,7 +101,7 @@ static class GraffitiLauncher
                     WorkingDirectory = Path.Combine(root, "app")
                 };
                 info.EnvironmentVariables["GRAFFITI_DATA"] = data;
-                info.EnvironmentVariables["GRAFFITI_PORT"] = "0";
+                info.EnvironmentVariables["GRAFFITI_PORT"] = Environment.GetEnvironmentVariable("GRAFFITI_PORT") ?? "3197";
                 info.EnvironmentVariables["GRAFFITI_READY_FILE"] = ready;
                 info.EnvironmentVariables["GRAFFITI_LAUNCHER_PIPE"] = "1";
                 service = Process.Start(info);

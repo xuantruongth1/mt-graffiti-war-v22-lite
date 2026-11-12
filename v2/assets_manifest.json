@@ -1199,5 +1199,7 @@
     "dynamic_particles",
     "weapon_hands_front",
     "livestream_ui"
-  ]
+  ],
+  "v3_hands": {"spray": "hands/spray.webp", "toss": "hands/toss.webp"},
+  "v3_weapon_anchors": "weapon-anchors.json"
 }
