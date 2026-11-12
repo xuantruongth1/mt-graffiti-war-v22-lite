@@ -38,11 +38,11 @@ Chạy kiểm tra dữ liệu bằng **node test-v22.mjs** và **node test-v2.mj
 
 ## Chế độ nhẹ
 
-Preview luôn vẽ ở 360 × 640, tối đa 30 FPS. Màn LIVE mặc định vẽ ở 540 × 960, 30 FPS. Chọn 60 FPS ở **Hiệu ứng & bố cục** để dùng 1080 × 1920 trên màn LIVE. Kích thước nguồn trong OBS vẫn có thể đặt 1080 × 1920.
+Màn trình diễn trong Studio dùng độ phân giải preview đã chọn. Nguồn OBS mặc định 1080 × 1920 ở 30 FPS, có thể chỉnh FPS và độ phân giải độc lập.
 
 Tường và khung WebP tải theo cảnh đang dùng. Khi cảnh đứng yên, game chỉ vẽ lại khi hình thay đổi hoặc giọt sơn đang mờ đi. Thiết lập mặc định của bản nhẹ giảm hạt sơn và tắt rung. Có thể chỉnh lại trong bảng điều khiển.
 
-Nếu Windows chặn mở trình duyệt tự động, sao chép địa chỉ từ ô trong launcher và dán vào trình duyệt. Nút **Mở màn LIVE** điền địa chỉ overlay vào cùng ô.
+Nếu Windows chặn mở trình duyệt tự động, sao chép địa chỉ từ ô trong launcher và dán vào trình duyệt. Nút **Sao chép link OBS** chỉ sao chép địa chỉ nguồn trình duyệt.
 
 
 ## Kiểm thử local
@@ -59,7 +59,7 @@ Dữ liệu phiên V2.2 được sao lưu vào `studio.pre-v3.*.json` lần đ�
 
 ## V3.1 và chẩn đoán
 
-Chọn độ phân giải LIVE và FPS riêng trong Hiệu ứng & bố cục. Mặc định LIVE 1080 × 1920 ở 30 FPS. Preview giữ nhịp 30 FPS và có độ phân giải riêng. Studio hiển thị mẫu LIVE từ overlay đang vẽ; khi nguồn LIVE đóng hoặc đứng yên, mục này báo chưa có mẫu hoạt động. Nút tải 100 lượt trong 10 giây chỉ dùng dữ liệu DEMO.
+Chọn độ phân giải LIVE và FPS riêng trong Hiệu ứng & bố cục. Mặc định LIVE 1080 × 1920 ở 30 FPS. Preview giữ nhịp 30 FPS và có độ phân giải riêng. Studio hiển thị mẫu LIVE từ overlay đang vẽ; khi nguồn LIVE đóng hoặc đứng yên, mục này báo chưa có mẫu hoạt động. Nút tải 100 lượt trong 10 giây dùng dữ liệu thử và phát lên màn trình diễn khi bấm trong Studio.
 
 Có thể thêm `?clean=1` vào link overlay để ẩn nút âm thanh. `?clean=1&audio=1` yêu cầu bật AudioContext khi tải trang. Âm thanh tự phát phụ thuộc chính sách trình duyệt/OBS; hãy xác minh bằng cảnh thử trước khi dùng.
 
@@ -67,7 +67,7 @@ Có thể thêm `?clean=1` vào link overlay để ẩn nút âm thanh. `?clean=
 
 ## V3.2
 
-Studio tách bản nháp, DEMO và cấu hình LIVE. Nút Thử trong DEMO chỉ gửi cấu hình cho phòng thử. Áp dụng lên LIVE kiểm tra phiên bản để tránh ghi đè từ tab khác. Hoàn tác đưa cấu hình trước đó trở lại bản nháp để bạn xem và áp dụng.
+Studio tách bản nháp và cấu hình LIVE. Nút Thử trên màn LIVE phát một lượt thử ngay trên nguồn LIVE đang mở, bằng dữ liệu thử riêng. Quà/bình luận thật vẫn được nhận trong lúc thử và tiếp tục trình diễn khi kết thúc. Áp dụng lên LIVE kiểm tra phiên bản để tránh ghi đè từ tab khác. Hoàn tác đưa cấu hình trước đó trở lại bản nháp để bạn xem và áp dụng.
 
 Trong Hiệu ứng & bố cục có nền gốc và 7 bối cảnh mới. Bảy nền mới được tạo bằng ImageGen theo yêu cầu ảnh dọc 9:16, tường trống chiếm khoảng 24–68% chiều cao, camera chính diện, không chữ, chừa mặt sân. Các chủ đề là neon xanh, thành cổ, xưởng thép, sân Tết, băng, thiên hà và biển. Ảnh được xuất WebP vào v2/walls.
 

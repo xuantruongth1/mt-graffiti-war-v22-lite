@@ -44,12 +44,17 @@ const localCatalog=join(root,'adapter','catalog.json');
 const catalogPath=process.env.GRAFFITI_CATALOG||localCatalog;
 let catalog=[];
 try{const raw=JSON.parse(await readFile(catalogPath,'utf8'));catalog=Array.isArray(raw)?raw:raw.icons||raw.gifts||raw.items||[];}catch{}
+const presentationActions=new Set(['test','test-chat','test-combo','test-scenario','burst']);
+let showTest=false,testUntil=0;
 function state(which){
  const s=which==='demo'?demo:live;
- return {config:which==='demo'?(demoConfig??config):config,configRevision,paused:!!s.presentationPaused,wallTheme:(which==='demo'?(demoConfig??config):config).wallTheme,liveMetrics:[...rendererSamples.values()].filter(sample=>Date.now()-sample.at<10000),serverTime:Date.now(),connection,marks:s.marks,scene:s.scene,pending:(s.pending??[]).map(({gift,uid,at,count,reason})=>({gift,uid,at,count,reason})),wallMode:s.wallMode,queueWaitMs:s.scene?Math.max(0,s.scene.start-s.scene.at):null,communityCount:s.community.marks.length,giftQueued:s.queue.filter(x=>x.coins).length,top:Object.values(s.scores).filter(x=>x.coins).sort((a,b)=>b.coins-a.coins).slice(0,5),log:s.log,queue:s.queue.length,wallNumber:s.wallNumber??1,wallMove:s.wallMove??null,round:s.round,ends:s.ends,winners:s.winners,winningTeam:s.winningTeam,teams:s.teams,status};
+ return {showTest,config:which==='demo'?(demoConfig??config):config,configRevision,paused:!!s.presentationPaused,wallTheme:(which==='demo'?(demoConfig??config):config).wallTheme,liveMetrics:[...rendererSamples.values()].filter(sample=>Date.now()-sample.at<10000),serverTime:Date.now(),connection,marks:s.marks,scene:s.scene,pending:(s.pending??[]).map(({gift,uid,at,count,reason})=>({gift,uid,at,count,reason})),wallMode:s.wallMode,queueWaitMs:s.scene?Math.max(0,s.scene.start-s.scene.at):null,communityCount:s.community.marks.length,giftQueued:s.queue.filter(x=>x.coins).length,top:Object.values(s.scores).filter(x=>x.coins).sort((a,b)=>b.coins-a.coins).slice(0,5),log:s.log,queue:s.queue.length,wallNumber:s.wallNumber??1,wallMove:s.wallMove??null,round:s.round,ends:s.ends,winners:s.winners,winningTeam:s.winningTeam,teams:s.teams,status};
 }
 function viewState(which,view){
- const snapshot=state(which);
+ const presenting=view==='overlay'&&which==='live'&&showTest;
+ const snapshot=state(presenting?'demo':which);
+ if(view==='overlay')snapshot.showTest=presenting;
+ if(presenting)snapshot.config={...snapshot.config,fps:config.fps,renderWidth:config.renderWidth};
  if(view==='studio'){
    delete snapshot.marks;delete snapshot.scene;delete snapshot.wallMove;
  }else if(view==='overlay'){
@@ -91,20 +96,29 @@ function save(){
 const revision=s=>JSON.stringify([s.scene?.id,s.marks.length,s.round,s.wallMove?.start,s.wallMode,s.wallNumber]);
 let liveRevision=revision(live),demoRevision=revision(demo);
 setInterval(()=>{
- tick(live,config);tick(demo,demoConfig??config);
+ const now=Date.now();
+ const canShowTest=showTest||testUntil>0&&(!live.scene||live.scene.end<=now)&&(!live.wallMove||live.wallMove.end<=now);
+ if(!canShowTest)tick(live,config,now);
+ if(!testUntil||canShowTest)tick(demo,demoConfig??config,now);
+ const previous=showTest;
+ showTest=canShowTest&&(demo.queue.length>0||!!demo.scene||!!demo.wallMove||!!demoScenario||now<testUntil);
+ if(canShowTest&&!showTest)testUntil=0;
  if(demoScenario&&demo.community.marks.length===3&&!demo.scene&&demo.wallMode==='community'){
    const type=demoScenario;demoScenario=null;
    if(type==='donors'){testGift(100,101);testGift(500,102);}
-   else if(type==='upgrade'){testGift(1,101);const token=scenarioGeneration;setTimeout(()=>{if(token===scenarioGeneration)testGift(100,101);},5500);}
+   else if(type==='upgrade'){if(testUntil)testUntil=Math.max(testUntil,now+6500);testGift(1,101);const token=scenarioGeneration;setTimeout(()=>{if(token===scenarioGeneration)testGift(100,101);},5500);}
    else testGift(20,101);
  }
  const nextLive=revision(live),nextDemo=revision(demo);
- if(nextLive!==liveRevision||nextDemo!==demoRevision){
+ if(previous!==showTest||nextLive!==liveRevision||nextDemo!==demoRevision){
    if(nextLive!==liveRevision)dirty=true;
    liveRevision=nextLive;demoRevision=nextDemo;broadcast();
  }
 },100).unref();
 setInterval(save,1000).unref();
+setInterval(()=>{
+ for(const response of clients.keys())if(response.writableLength<512000)response.write(': heartbeat\n\n');
+},15000).unref();
 const testNames=['Linh Neon','Minh Cọ','Bảo Lam','An Màu','Hà Pixel','Mai Trường','Vy Hồng','Trúc Vàng'];
 function testGift(coins,index=sequence){
  const userId='demo-'+index;
@@ -233,7 +247,7 @@ const server=http.createServer(async(req,res)=>{
    clearInterval(burst);
    const rate=[1,5,10,20].includes(Number(a.rate))?Number(a.rate):100/30;
    let n=0;burst=setInterval(()=>{testGift((demoConfig??config).rows[n%config.rows.length].min);if(++n>=100)clearInterval(burst);},1000/rate);
-  }else if(a.action==='clear-demo'){clearInterval(burst);scenarioGeneration++;demoScenario=null;demo=session();}
+  }else if(a.action==='clear-demo'){clearInterval(burst);scenarioGeneration++;demoScenario=null;demo=session();showTest=false;testUntil=0;}
   else if(a.action==='reset'){live=session();dirty=true;}
   else if(a.action==='round'){(a.source==='demo'?demo:live).ends=Date.now();if(a.source!=='demo')dirty=true;}
   else if(['pause-presentation','resume-presentation','skip-current-visual','skip-transition'].includes(a.action)){
@@ -287,6 +301,10 @@ const server=http.createServer(async(req,res)=>{
      config=nextConfig;configRevision++;dirty=true;
    }
   }else throw Error('Lệnh không hợp lệ.');
+  if(a.showOnLive===true&&presentationActions.has(a.action)){
+    const hold=a.action==='burst'?Math.ceil(100000/([1,5,10,20].includes(Number(a.rate))?Number(a.rate):100/30))+1000:2400;
+    testUntil=Math.max(testUntil,Date.now()+hold);
+  }
   broadcast();save();return json(res,{ok:true,revision:configRevision});
  }
  const icon=url.pathname.match(/^\/gift-icon\/([a-zA-Z0-9_-]+\.png)$/);

@@ -119,6 +119,8 @@ function soundCue(kind,tier,volume){
 
 const galleryKind=params.get('kind'),galleryId=params.get('id');
 function receive(next){
+ if(preview)parent.postMessage({graffitiReady:true},location.origin);
+ if(state&&state.showTest!==next.showTest)floor.length=0;
  state=next;dirty=true;
  if(state.wallNumber===1&&lastWall>1)floor.length=0;
  lastWall=state.wallNumber;
@@ -129,6 +131,7 @@ if(galleryKind&&galleryId){
 }else{
  const stream=new EventSource('/api/events?view=overlay&source='+source);
  stream.onmessage=e=>receive(JSON.parse(e.data));
+ if(preview)stream.onerror=()=>parent.postMessage({graffitiReady:false},location.origin);
 }
 function cue(id,name,level){
  const key=id+'|'+name;if(heard.has(key))return false;
@@ -540,7 +543,7 @@ function draw(time){
    text(note,banner.x+banner.w/2,banner.y+banner.h/2,Math.min(27,banner.w/Math.max(16,note.length*.6)),'#fff2f8');
    if(editingBox==='note')resizeHandle(banner);
  }
- if(source==='demo')text('PHÒNG THỬ',540,1890,16,'#bcddfb');
+ if(source==='demo'||state.showTest)text('ĐANG TRÌNH DIỄN THỬ',540,1890,20,'#ffe09b');
  if(moving)drawTimes.push(performance.now()-renderStarted);
 }
 requestAnimationFrame(draw);

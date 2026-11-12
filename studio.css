@@ -50,3 +50,20 @@ label,li{color:#284969}.pill{background:#e7f1ff;color:#214b89;border-color:#bdd2
 .support-grid img{display:block;width:100%;height:245px;object-fit:contain}.support-grid figcaption{font-size:13px;color:#244e92;margin-top:8px}
 .guide{width:min(880px,100%);margin:auto}.guide h1{font-size:42px;margin:22px 0}.guide-header{position:static;border:1px solid var(--line);border-radius:12px}
 @media(max-width:900px){header .actions{flex-wrap:wrap}.draft-bar .actions{width:100%}.tier-heading{flex-wrap:wrap}}
+
+/* Tiệc Cưới panel layout: compact command bar, single stage, in-page guide. */
+.shell{grid-template-columns:clamp(155px,15vw,220px) minmax(0,1fr) clamp(260px,29vw,420px);grid-template-rows:auto 1fr}
+header{min-height:62px;padding:9px 14px}.preview{top:62px;padding:14px}.nav{padding:12px 10px}.nav button{min-height:36px}
+main{padding:14px}.card{border-radius:12px;padding:14px;margin-bottom:12px}
+.draft-bar{padding:10px 12px}.draft-bar button,.preview .actions button{min-height:34px;padding:7px 10px}
+.preview-screen{position:relative;width:min(100%,calc((100dvh - 210px)*.5625));min-width:0;aspect-ratio:9/16;margin:10px auto;background:#101c30;border:1px solid #b6c6e1;border-radius:12px;overflow:hidden}
+.preview-screen iframe{width:100%;height:100%;margin:0;border:0;border-radius:0}
+#preview-placeholder{position:absolute;inset:0;z-index:2;margin:0;display:grid;place-content:center;padding:22px;text-align:center;color:#dce9ff;background:#101c30}
+.preview .actions{justify-content:center}
+.guide-toc{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
+.guide-toc a{padding:7px 10px;border:1px solid var(--line);border-radius:7px;color:#174caa;background:#edf4ff;text-decoration:none;font-size:13px}
+.guide-chapter{display:grid;grid-template-columns:32px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line);scroll-margin-top:75px}
+.guide-chapter h3,.guide-support h3{font-size:15px;margin:3px 0 0}.guide-chapter p{margin:6px 0}
+.guide-step{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:#e6efff;color:#164bb2;font-weight:800}
+@media(max-width:860px){.shell,.nav-hidden .shell{grid-template-columns:minmax(0,1fr)}header{grid-column:1;flex-wrap:wrap}.preview{position:static}.preview-screen{width:min(100%,280px)}main{padding:10px}}
+@media(min-width:861px){.preview-screen{width:min(100%,calc((100dvh - 238px)*.5625))}.preview .actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.preview .actions button{padding-inline:5px}}

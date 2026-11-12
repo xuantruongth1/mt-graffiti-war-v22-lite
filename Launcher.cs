@@ -40,7 +40,7 @@ static class GraffitiLauncher
             Size = new Size(221, 39), Enabled = false
         };
         var live = new Button {
-            Text = "Mở màn LIVE", Location = new Point(261, 105),
+            Text = "Sao chép link OBS", Location = new Point(261, 105),
             Size = new Size(231, 39), Enabled = false
         };
         form.Controls.AddRange(new Control[] {status, address, studio, live});
@@ -60,7 +60,17 @@ static class GraffitiLauncher
             }
         };
         studio.Click += (sender, args) => open(url + "/");
-        live.Click += (sender, args) => open(url + "/overlay.html");
+        live.Click += (sender, args) => {
+            address.Text = url + "/overlay.html?renderer=obs";
+            try {
+                Clipboard.SetText(address.Text);
+                status.Text = "Đã sao chép link OBS. Màn thử nằm trong bảng điều khiển.";
+            } catch (System.Runtime.InteropServices.ExternalException) {
+                address.Focus();
+                address.SelectAll();
+                status.Text = "Hãy sao chép địa chỉ trong ô bên dưới.";
+            }
+        };
 
         var timer = new Timer { Interval = 200 };
         var started = Stopwatch.StartNew();

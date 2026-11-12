@@ -70,6 +70,7 @@ try{
  const missing=await act('connect',{username:'demo'},'live',400);
  assert.match(missing.error,/Thiếu adapter/);
 
+ await act('clear-demo');
  await act('pause-presentation',{},'demo');
  await act('test-chat',{count:6});
  const paused=await wait(s=>s.queue===6&&s.paused);

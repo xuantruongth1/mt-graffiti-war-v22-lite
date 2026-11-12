@@ -7,14 +7,19 @@ const names=['Nét màu','Mưa màu','Pháo giấy','Chữ neon','Rồng sắc m
 const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
 const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','wallTheme','renderWidth','previewWidth','max','fullHold','wipeMs','peak','speed'],flags=['gunRotate','scaleTransitions','flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
 const tabs={overview:'Tổng quan & Điều khiển LIVE',gifts:'Quà & vật phẩm',props:'Skin & bom sơn',fx:'Hiệu ứng & bố cục',round:'Vòng chơi & TOP',test:'Phòng thử hiệu ứng',gallery:'Thư viện tường',support:'Hướng dẫn & hỗ trợ',log:'Nhật ký phiên'};
-let current,liveState,demoState,source='live',audio=false,settingsLoaded=false,timer;
+let current,liveState,demoState,audio=false,settingsLoaded=false,timer;
 function el(tag,text){const x=document.createElement(tag);if(text!=null)x.textContent=text;return x;}
 function notice(text){clearTimeout(timer);$('feedback').textContent=text;timer=setTimeout(()=>$('feedback').textContent='',5500);}
 const serverOffline='Mất kết nối với máy chủ game. Mở lại MT Graffiti War V3.2.exe và giữ cửa sổ launcher mở.';
 function showDemoConnection(connected){
  $('test-timeline').textContent=connected?'Phòng thử đã kết nối.':serverOffline;
 }
+const liveTests=new Set(['test','test-chat','test-combo','test-scenario','burst']);
 async function action(action,params={},message='Đã cập nhật'){
+ if(liveTests.has(action)){
+   if(gallerySource)showLive();
+   params={...params,showOnLive:true};
+ }
  let response;
  try{
    response=await fetch('/api/action',{
@@ -31,22 +36,50 @@ async function action(action,params={},message='Đã cập nhật'){
    notice(message);return result;
  }catch(error){notice(error instanceof SyntaxError?'Máy chủ trả về phản hồi không hợp lệ. Mở Studio từ launcher.':error.message);return false;}
 }
-let gallerySource=null;
-function setSource(next){gallerySource=null;source=next;$('preview-label').textContent='Đang tải…';$('frame').src='/overlay.html?preview=1'+(next==='demo'?'&source=demo':'');$('source').textContent=next==='demo'?'Xem LIVE thật':'Xem phòng thử';}
-let activeTab='overview';
-function tab(name){if(activeTab==='test'&&name!=='test'&&source==='demo')setSource('live');activeTab=name;for(const key of Object.keys(tabs))$(key).hidden=key!==name;for(const b of document.querySelectorAll('[data-tab]'))b.classList.toggle('active',b.dataset.tab===name);$('page-title').textContent=tabs[name];if(name==='test'&&(source!=='demo'||gallerySource))setSource('demo');if(name==='gallery')void refreshGallery();}
-for(const b of document.querySelectorAll('[data-tab],[data-open]'))b.onclick=()=>tab(b.dataset.tab||b.dataset.open);
-$('menu').onclick=()=>document.body.classList.toggle('nav-hidden');
-$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+'/overlay.html?renderer=obs');notice('Đã sao chép link LIVE');}catch{notice(location.origin+'/overlay.html?renderer=obs');}};
-$('frame').onload=()=>{
- const kind=gallerySource?'gallery':source;
+let gallerySource=null,frameReady=false,studioOnline=false;
+function updatePreview(){
  const label=$('preview-label');
+ const kind=gallerySource?'gallery':liveState?.showTest?'demo':'live';
  label.dataset.source=kind;
- label.textContent={gallery:'THƯ VIỆN',demo:'DEMO · Dữ liệu riêng',live:'LIVE · Xem trước'}[kind];
- if(audio)$('frame').contentWindow.postMessage({audio},location.origin);
+ label.textContent={gallery:'Thư viện',demo:'LIVE · Đang trình diễn thử',live:'LIVE · Màn trình diễn'}[kind];
+ $('preview-placeholder').hidden=studioOnline&&frameReady;
+ $('source').disabled=!liveState?.showTest&&!demoState?.queue;
+ $('preview-placeholder').textContent=studioOnline?'Đang tải màn trình diễn…':serverOffline;
+}
+function showLive(reload=false){
+ if(!gallerySource&&!reload)return;
+ gallerySource=null;frameReady=false;
+ $('frame').src='/overlay.html?preview=1';
+ updatePreview();
+}
+function tab(name){
+ if(name!=='gallery'&&gallerySource)showLive();
+ $('live-controls').hidden=name!=='overview';
+ for(const key of Object.keys(tabs))$(key).hidden=key!==name;
+ for(const b of document.querySelectorAll('[data-tab]'))b.classList.toggle('active',b.dataset.tab===name);
+ $('page-title').textContent=tabs[name];
+ if(name==='gallery')void refreshGallery();
+}
+for(const b of document.querySelectorAll('[data-tab],[data-open]'))b.onclick=()=>tab(b.dataset.tab||b.dataset.open);
+if(location.hash.startsWith('#guide-')){
+ tab('support');
+ document.getElementById(location.hash.slice(1))?.scrollIntoView();
+}
+$('menu').onclick=()=>document.body.classList.toggle('nav-hidden');
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+'/overlay.html?renderer=obs');notice('Đã sao chép link OBS');}catch{notice(location.origin+'/overlay.html?renderer=obs');}};
+$('frame').onload=()=>{if(audio)$('frame').contentWindow.postMessage({audio},location.origin);};
+addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.source!==$('frame').contentWindow||typeof event.data?.graffitiReady!=='boolean')return;
+ frameReady=event.data.graffitiReady;updatePreview();
+});
+$('preview-audio').onclick=()=>{
+ audio=!audio;
+ $('frame').contentWindow.postMessage({audio},location.origin);
+ $('preview-audio').textContent=audio?'Tắt tiếng':'Bật tiếng';
 };
-$('preview-audio').onclick=()=>{audio=!audio;$('frame').contentWindow.postMessage({audio},location.origin);$('preview-audio').textContent=audio?'Tắt tiếng xem trước':'Bật tiếng xem trước';};
-$('refresh').onclick=()=>setSource(source);$('source').onclick=()=>setSource(source==='demo'?'live':'demo');
+$('refresh').onclick=()=>showLive(true);
+$('source').onclick=async()=>{await action('clear-demo',{},'Đã kết thúc lượt thử');showLive();};
+$('open-live').onclick=()=>{showLive();$('preview-panel').scrollIntoView({block:'nearest',behavior:'smooth'});};
 $('connect-form').onsubmit=e=>{e.preventDefault();action('connect',{username:$('username').value},'Đang yêu cầu kết nối…');};
 $('disconnect').onclick=()=>action('disconnect');$('reset').onclick=()=>{if(confirm('Xóa tường, TOP và nhật ký LIVE để bắt đầu phiên mới?')&&confirm('Xác nhận xóa dữ liệu phiên LIVE hiện tại?'))action('reset');};
 $('next-round').onclick=()=>action('round',{source:'live'},'Đã chốt vòng LIVE');
@@ -100,7 +133,7 @@ async function save(change){
  if(await action('preview-settings',{config},'Đã cập nhật bản nháp trong DEMO')){
    if(change){history.push(current);current=config;showConfig(false);}
    refreshDraft();
-   if(source!=='demo'||gallerySource)setSource('demo');
+   if(gallerySource)showLive();
    return true;
  }
  return false;
@@ -133,7 +166,7 @@ $('apply-live').onclick=async()=>{
  if(result){history.push(applied);applied=structuredClone(config);revision=result.revision;restoreDraft(config);}
 };
 $('undo-draft').onclick=()=>{if(applied)restoreDraft(history.pop()??applied);};
-$('test-draft').onclick=()=>save();
+$('test-draft').onclick=async()=>{if(await save())await action('test-chat',{count:1},'Đã gửi bản thử lên màn LIVE');};
 for(const b of document.querySelectorAll('[data-save]')){b.textContent='Thử bản nháp';b.onclick=()=>save();}
 for(const [id,actionName] of [['pause-live','pause-presentation'],['resume-live','resume-presentation'],['skip-live','skip-current-visual']]){
  $(id).onclick=()=>action(actionName);
@@ -243,14 +276,18 @@ $('retry-pending').onclick=async()=>{
 for(const which of ['live','demo']){
  const stream=new EventSource('/api/events?view=studio&source='+which);
  if(which==='demo')stream.onerror=()=>showDemoConnection(false);
+ else stream.onerror=()=>{studioOnline=false;updatePreview();};
  stream.onmessage=e=>{
    const s=JSON.parse(e.data);
    if(which==='live'){
+     const reconnect=!studioOnline;studioOnline=true;
      liveState=s;
+     if(reconnect&&!frameReady&&settingsLoaded)showLive(true);
+     updatePreview();
      if(!settingsLoaded){settingsLoaded=true;applied=structuredClone(s.config);revision=s.configRevision;restoreDraft(s.config);}
    }else{
      demoState=s;
-     showDemoConnection(true);
+     showDemoConnection(true);updatePreview();
    }
    render();
  };
@@ -286,7 +323,7 @@ $('import-config').onchange=async()=>{
  try{
    const config=JSON.parse(await $('import-config').files[0].text());
    const next={...read(),...config};
-   if(await action('preview-settings',{config:next},'Đã nạp cấu hình vào bản nháp')){history.push(read());restoreDraft(next);setSource('demo');}
+   if(await action('preview-settings',{config:next},'Đã nạp cấu hình vào bản nháp')){history.push(read());restoreDraft(next);}
  }catch(e){notice(e.message);}
 };
 
@@ -296,7 +333,7 @@ function sendEditor(){
  $('frame').contentWindow.postMessage({editBox:topEditing?$('layout-box').value:null},location.origin);
 }
 $('edit-top').onclick=async()=>{
- if(!topEditing&&source!=='demo'&&!await save())return;
+ if(!topEditing&&!await save())return;
  topEditing=!topEditing;
  $('edit-top').setAttribute('aria-pressed',String(topEditing));sendEditor();
 };
@@ -342,7 +379,7 @@ async function refreshGallery(){
    const response=await fetch('/api/gallery?source='+selected);if(!response.ok)throw Error('Không đọc được thư viện.');
    const data=await response.json();
    function view(kind,id,replay=false){
-     gallerySource=selected;
+     gallerySource=selected;frameReady=false;updatePreview();
      $('frame').src='/overlay.html?'+new URLSearchParams({preview:1,export:1,source:selected,kind,id,replay:replay?'1':'0'});
    }
    $('gallery-pages').replaceChildren(...(data.pages.length?data.pages.map(p=>{
@@ -373,7 +410,7 @@ $('gallery-png').onclick=()=>{
    },'image/png');
  }catch{notice('Ảnh đại diện từ nguồn ngoài không cho phép xuất PNG.');}
 };
-$('gallery-exit').onclick=()=>setSource('live');
+$('gallery-exit').onclick=()=>showLive();
 const wallPicker=$('wall-picker');
 for(const [id,name] of walls.entries()){
  const option=el('option',name);option.value=id;$('wallTheme').append(option);
