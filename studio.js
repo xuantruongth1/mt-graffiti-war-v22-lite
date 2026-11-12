@@ -1,16 +1,16 @@
 import {frameGeometry,drawFrame} from './asset-layout.mjs';
-import {manifest,v2Frame,timeline} from './v2.mjs';
+import {manifest,v2Frame,timeline,walls,wallAsset,gunAsset} from './v2.mjs';
 import {palette} from './stage-layout.mjs';
 import {paintStamp} from './stage-art.mjs';
 const $=id=>document.getElementById(id);
 const names=['Nét màu','Mưa màu','Pháo giấy','Chữ neon','Rồng sắc màu','Siêu VIP Pro','Sóng cầu vồng','Cánh phượng','Tẩy sơn','Khiên màu','Vương miện','Tia sét','Sao vàng','Cầu vồng','Portal','Tim ma thuật'];
 const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
-const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','renderWidth','previewWidth','max','fullHold','wipeMs','peak','speed'],flags=['scaleTransitions','flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
-const tabs={overview:'Tổng quan & Điều khiển LIVE',gifts:'Quà & vật phẩm',props:'Skin & bom sơn',fx:'Hiệu ứng & bố cục',round:'Vòng chơi & TOP',test:'Phòng thử hiệu ứng',gallery:'Thư viện tường',log:'Nhật ký phiên'};
+const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','wallTheme','renderWidth','previewWidth','max','fullHold','wipeMs','peak','speed'],flags=['gunRotate','scaleTransitions','flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
+const tabs={overview:'Tổng quan & Điều khiển LIVE',gifts:'Quà & vật phẩm',props:'Skin & bom sơn',fx:'Hiệu ứng & bố cục',round:'Vòng chơi & TOP',test:'Phòng thử hiệu ứng',gallery:'Thư viện tường',support:'Hướng dẫn & hỗ trợ',log:'Nhật ký phiên'};
 let current,liveState,demoState,source='live',audio=false,settingsLoaded=false,timer;
 function el(tag,text){const x=document.createElement(tag);if(text!=null)x.textContent=text;return x;}
 function notice(text){clearTimeout(timer);$('feedback').textContent=text;timer=setTimeout(()=>$('feedback').textContent='',5500);}
-const serverOffline='Mất kết nối với máy chủ game. Mở lại MT Graffiti War V3.1.exe và giữ cửa sổ launcher mở.';
+const serverOffline='Mất kết nối với máy chủ game. Mở lại MT Graffiti War V3.2.exe và giữ cửa sổ launcher mở.';
 function showDemoConnection(connected){
  $('test-timeline').textContent=connected?'Phòng thử đã kết nối.':serverOffline;
 }
@@ -28,15 +28,16 @@ async function action(action,params={},message='Đã cập nhật'){
  try{
    const result=await response.json();
    if(!response.ok)throw Error(result.error||'Yêu cầu không thành công.');
-   notice(message);return true;
+   notice(message);return result;
  }catch(error){notice(error instanceof SyntaxError?'Máy chủ trả về phản hồi không hợp lệ. Mở Studio từ launcher.':error.message);return false;}
 }
 let gallerySource=null;
 function setSource(next){gallerySource=null;source=next;$('preview-label').textContent='Đang tải…';$('frame').src='/overlay.html?preview=1'+(next==='demo'?'&source=demo':'');$('source').textContent=next==='demo'?'Xem LIVE thật':'Xem phòng thử';}
-function tab(name){for(const key of Object.keys(tabs))$(key).hidden=key!==name;for(const b of document.querySelectorAll('[data-tab]'))b.classList.toggle('active',b.dataset.tab===name);$('page-title').textContent=tabs[name];if(name==='test'&&(source!=='demo'||gallerySource))setSource('demo');if(name==='gallery')void refreshGallery();}
+let activeTab='overview';
+function tab(name){if(activeTab==='test'&&name!=='test'&&source==='demo')setSource('live');activeTab=name;for(const key of Object.keys(tabs))$(key).hidden=key!==name;for(const b of document.querySelectorAll('[data-tab]'))b.classList.toggle('active',b.dataset.tab===name);$('page-title').textContent=tabs[name];if(name==='test'&&(source!=='demo'||gallerySource))setSource('demo');if(name==='gallery')void refreshGallery();}
 for(const b of document.querySelectorAll('[data-tab],[data-open]'))b.onclick=()=>tab(b.dataset.tab||b.dataset.open);
 $('menu').onclick=()=>document.body.classList.toggle('nav-hidden');
-$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+'/overlay.html');notice('Đã sao chép link LIVE');}catch{notice(location.origin+'/overlay.html');}};
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+'/overlay.html?renderer=obs');notice('Đã sao chép link LIVE');}catch{notice(location.origin+'/overlay.html?renderer=obs');}};
 $('frame').onload=()=>{
  const kind=gallerySource?'gallery':source;
  const label=$('preview-label');
@@ -72,7 +73,7 @@ $('catalog').onchange=()=>{
  preview.append(el('span',option.textContent));
 };
 function read(){
- const config={...current,mapping:{...current.mapping},values:{...current.values}};
+ const config={...current,gunPool:[...$('gun-pool').querySelectorAll('input:checked')].map(x=>Number(x.value)),mapping:{...current.mapping},values:{...current.values}};
  for(const key of values)config[key]=Number($(key).value);
  for(const key of flags)config[key]=$(key).checked;
  const rows=Array.from($('tiers').children,row=>Object.fromEntries(Array.from(row.querySelectorAll('input,select'),i=>[i.name,i.type==='number'?Number(i.value):i.value])));
@@ -96,9 +97,47 @@ async function save(change){
    }
    if(config.particles>80&&config.fps===60&&config.renderWidth===1080&&!confirm('Thiết lập 1080p · 60 FPS · trên 80% hạt có thể tăng tải. Vẫn áp dụng?'))return;
  }
- if(await action('settings',{config},'Đã lưu thiết lập')){current=config;showConfig(false);}
+ if(await action('preview-settings',{config},'Đã cập nhật bản nháp trong DEMO')){
+   if(change){history.push(current);current=config;showConfig(false);}
+   refreshDraft();
+   if(source!=='demo'||gallerySource)setSource('demo');
+   return true;
+ }
+ return false;
 }
-for(const b of document.querySelectorAll('[data-save]'))b.onclick=()=>save();
+let applied,revision=0;
+const history=[];
+function changes(config){
+ return Object.keys(config).filter(k=>JSON.stringify(config[k])!==JSON.stringify(applied?.[k]));
+}
+function refreshDraft(){
+ if(!applied)return;
+ const count=changes(read()).length;
+ $('draft-status').textContent=count?count+' nhóm thay đổi chưa áp dụng':'Đang dùng cấu hình LIVE';
+ $('apply-live').disabled=!count;
+ $('undo-draft').disabled=!count&&!history.length;
+}
+function restoreDraft(config){
+ current=structuredClone(config);
+ $('tiers').replaceChildren();$('slot-settings').replaceChildren();
+ showConfig(true);refreshDraft();
+}
+document.querySelector('main').addEventListener('input',refreshDraft);
+addEventListener('beforeunload',event=>{if(applied&&changes(read()).length){event.preventDefault();event.returnValue='';}});
+$('apply-live').onclick=async()=>{
+ if(!applied)return;
+ const config=read(),diff=changes(config);
+ if(!diff.length||!confirm('Áp dụng '+diff.length+' nhóm thay đổi lên LIVE?'))return;
+ if(!await action('preview-settings',{config},'Đã kiểm tra bản nháp'))return;
+ const result=await action('apply-settings',{config,revision},'Đã áp dụng lên LIVE');
+ if(result){history.push(applied);applied=structuredClone(config);revision=result.revision;restoreDraft(config);}
+};
+$('undo-draft').onclick=()=>{if(applied)restoreDraft(history.pop()??applied);};
+$('test-draft').onclick=()=>save();
+for(const b of document.querySelectorAll('[data-save]')){b.textContent='Thử bản nháp';b.onclick=()=>save();}
+for(const [id,actionName] of [['pause-live','pause-presentation'],['resume-live','resume-presentation'],['skip-live','skip-current-visual']]){
+ $(id).onclick=()=>action(actionName);
+}
 $('map-add').onclick=()=>{const id=$('gift-id').value.trim();if(!/^\d{1,15}$/.test(id)){notice('Nhập ID quà dạng số');return;}save(c=>{c.mapping[id]=$('item').value;const value=Number($('gift-value').value);if(value>0)c.values[id]=value;else delete c.values[id];});};
 const thumbObserver=new IntersectionObserver(entries=>{
  for(const {target,isIntersecting} of entries){
@@ -122,13 +161,17 @@ function showConfig(first){
     for(const axis of ['x','y']){const label=el('label',axis.toUpperCase()),input=el('input');input.type='number';input.dataset.axis=axis;input.value=slot[axis];label.append(input);group.append(label);}
     document.getElementById('slot-settings').append(group);
   }for(const key of values)$(key).value=current[key];for(const key of flags)$(key).checked=current[key];
+ for(const input of $('gun-pool').querySelectorAll('input'))input.checked=(current.gunPool??[]).includes(Number(input.value));
+ updateWallSelection();
  [current.free,...current.rows].forEach((r,i)=>{
    const row=el('div');row.className='tier';row.dataset.level=i;
    const heading=el('div');heading.className='tier-heading';
    const thumb=el('canvas');thumb.width=40;thumb.height=42;thumb.className='tier-thumb';
    thumb.dataset.level=i;thumbObserver.observe(thumb);
    heading.append(thumb);heading.append(el('strong',i===0?'Bình luận':i===6?'Siêu VIP Pro':'Quà · Bậc '+i),el('small',i===0?'Miễn phí':'Từ '+r.min.toLocaleString('vi-VN')+' xu'));
-   row.append(heading);
+   const play=el('button','Xem thử');
+   play.onclick=async()=>{if(!await save())return;await action(i?'test':'test-chat',i?{coins:Number(row.querySelector('[name=min]').value)}:{count:1});};
+   heading.append(play);row.append(heading);
    const fields=el('div');fields.className='tier-fields';
    const labels=i?[['min','Từ xu'],['size','Cỡ (px)'],['seconds','Vẽ (giây)'],['hold','Vinh danh (giây)'],['shots','Số phát'],['gap','Cách phát (ms)'],['bombs','Bom sơn'],['flight','Bay sơn (ms)'],['bombFlight','Bay bom (ms)'],['recoil','Giật nòng (px)']]:[['seconds','Vẽ (giây)'],['flight','Bay sơn (ms)'],['recoil','Giật nòng (px)']];
    for(const [key,title] of labels){
@@ -139,7 +182,9 @@ function showConfig(first){
    select.value=r.effect;l.append(select);fields.append(l);
    const skinLabel=el('label','Bảng màu'),skin=el('select');skin.name='skin';
    for(const id of ['auto',...manifest.skins]){const o=el('option',id==='auto'?'Tự động':id.replaceAll('_',' '));o.value=id;skin.append(o);}
-   skin.value=r.skin;skinLabel.append(skin);fields.append(skinLabel);row.append(fields);$('tiers').append(row);
+   skin.value=r.skin;skinLabel.append(skin);fields.append(skinLabel);
+   const detail=el('details'),summary=el('summary','Thông số nâng cao');
+   detail.append(summary,fields);row.append(detail);$('tiers').append(row);
  });
  }
  for(const [i,row] of Array.from($('tiers').children).slice(1).entries())row.querySelector('small').textContent='Từ '+current.rows[i].min.toLocaleString('vi-VN')+' xu';
@@ -155,22 +200,36 @@ function renderList(id,items,format){
 }
 function render(){
  if(!liveState)return;const s=liveState;
- $('status').textContent=s.status;$('m-marks').textContent=s.communityCount+' / '+s.config.max;$('m-queue').textContent=s.queue;$('m-round').textContent=s.round;
+ $('status').textContent=s.status;
+ $('pause-live').disabled=s.paused;$('resume-live').disabled=!s.paused;
+ $('m-marks').textContent=s.communityCount+' / '+s.config.max;$('m-queue').textContent=s.queue;$('m-round').textContent=s.round;
  renderList('top-list',s.top,x=>x.name+' · '+x.coins.toLocaleString('vi-VN')+' xu');
  renderLiveMetrics(s.liveMetrics);
  const selected=$('log-source').value==='demo'?demoState:liveState;
  const logs=selected?.log||[];
  const pending=selected?.pending??[],connection=selected?.connection;
- renderList('pending-list',pending,x=>x.gift+' · ×'+x.count+' · '+new Date(x.at).toLocaleTimeString('vi-VN'));
+ renderList('pending-list',pending,x=>(x.gift||'Quà chưa rõ ID')+' · ×'+x.count+' · '+(x.reason??'Chưa xác nhận')+' · '+new Date(x.at).toLocaleTimeString('vi-VN'));
  $('retry-pending').disabled=!pending.length;
  $('connection-info').textContent=connection?'Kết nối lại '+connection.reconnects+' lượt · '+connection.errors+' lỗi'+(connection.latencyMs===null?'':' · '+connection.latencyMs+' ms')+(connection.lastEventAt?' · Nhận gần nhất '+new Date(connection.lastEventAt).toLocaleTimeString('vi-VN'):''):'';
  $('queue-wait').textContent=selected?.queueWaitMs==null?'':'Lượt hiện tại đã chờ '+selected.queueWaitMs+' ms';
 
  renderList('log-list',logs.slice(0,35),x=>new Date(x.at).toLocaleTimeString('vi-VN')+' · '+x.name+' · '+x.item+' · '+x.coins+' xu'+(x.gift?' · ID '+x.gift:''));
 }
-function renderLiveMetrics(live){
+function renderLiveMetrics(samples=[]){
+ const active=samples.filter(x=>Date.now()-x.at<10000);
+ const select=$('renderer-choice'),previous=select.value;
+ const key=active.map(x=>x.id).join(',');
+ if(select.dataset.key!==key){
+   select.dataset.key=key;
+   const options=active.map(x=>{const o=el('option',x.label+' '+x.id.slice(0,6));o.value=x.id;return o;});
+   select.replaceChildren(...options);
+   select.value=active.some(x=>x.id===previous)?previous:(active.find(x=>x.label==='OBS')??active[0])?.id??'';
+ }
+ select.hidden=active.length<2;
+ const live=active.find(x=>x.id===select.value);
  $('live-metrics').textContent=live&&Date.now()-live.at<10000&&live.active?live.fps+' FPS · '+live.width+' × '+live.height+' · P95 '+live.p95+' ms · rớt '+live.dropRate+'%':'Chưa có mẫu LIVE đang vẽ';
 }
+$('renderer-choice').onchange=()=>renderLiveMetrics(liveState?.liveMetrics);
 setInterval(()=>renderLiveMetrics(liveState?.liveMetrics),2500);
 $('log-source').onchange=render;
 $('retry-pending').onclick=async()=>{
@@ -188,7 +247,7 @@ for(const which of ['live','demo']){
    const s=JSON.parse(e.data);
    if(which==='live'){
      liveState=s;
-     if(!settingsLoaded){settingsLoaded=true;current=s.config;showConfig(true);}
+     if(!settingsLoaded){settingsLoaded=true;applied=structuredClone(s.config);revision=s.configRevision;restoreDraft(s.config);}
    }else{
      demoState=s;
      showDemoConnection(true);
@@ -226,32 +285,50 @@ $('export-config').onclick=()=>{
 $('import-config').onchange=async()=>{
  try{
    const config=JSON.parse(await $('import-config').files[0].text());
-   if(await action('settings',{config},'Đã khôi phục cấu hình'))location.reload();
+   const next={...read(),...config};
+   if(await action('preview-settings',{config:next},'Đã nạp cấu hình vào bản nháp')){history.push(read());restoreDraft(next);setSource('demo');}
  }catch(e){notice(e.message);}
 };
 
 
 let topEditing=false;
-$('edit-top').onclick=()=>{
+function sendEditor(){
+ $('frame').contentWindow.postMessage({editBox:topEditing?$('layout-box').value:null},location.origin);
+}
+$('edit-top').onclick=async()=>{
+ if(!topEditing&&source!=='demo'&&!await save())return;
  topEditing=!topEditing;
- $('edit-top').setAttribute('aria-pressed',String(topEditing));
- $('frame').contentWindow.postMessage({topEditing},location.origin);
- notice(topEditing?'Kéo bảng TOP hoặc kéo góc dưới phải trong preview.':'Đã thoát chỉnh bố cục');
+ $('edit-top').setAttribute('aria-pressed',String(topEditing));sendEditor();
 };
-$('frame').addEventListener('load',()=>{
- if(topEditing)$('frame').contentWindow.postMessage({topEditing},location.origin);
-});
+$('layout-box').onchange=sendEditor;
+$('toggle-box').onclick=()=>{
+ const key=$('layout-box').value;
+ if(key==='top'){
+   $('top').checked=!$('top').checked;
+   return save();
+ }
+ return save(c=>{c.hud={...c.hud,[key]:{...c.hud[key],visible:!c.hud[key].visible}};});
+};
+$('frame').addEventListener('load',sendEditor);
 addEventListener('message',event=>{
- if(!topEditing||event.origin!==location.origin||event.source!==$('frame').contentWindow||!event.data?.topLayout)return;
- const layout=event.data.topLayout;
- if([layout.x,layout.y,layout.w].every(Number.isFinite))void save(c=>{c.topX=layout.x;c.topY=layout.y;c.topWidth=layout.w;});
+ if(!topEditing||event.origin!==location.origin||event.source!==$('frame').contentWindow)return;
+ const layout=event.data?.boxLayout;
+ if(!layout||layout.key!==$('layout-box').value||![layout.x,layout.y,layout.w].every(Number.isFinite))return;
+ void save(c=>{
+   const {key,x,y,w}=layout;
+   if(key==='top'){c.topX=x;c.topY=y;c.topWidth=w;}
+   else c.hud={...c.hud,[key]:{...c.hud[key],x,y,w}};
+ });
 });
 $('quality-preset').onchange=()=>{
  const choice=$('quality-preset').value;
  if(!choice)return;
- $('fps').value=choice==='low'?30:60;
+ $('fps').value=choice==='high'?60:30;
+ $('renderWidth').value=choice==='low'?720:1080;
+ $('previewWidth').value=choice==='low'?360:540;
  $('particles').value={low:35,medium:65,high:100}[choice];
  $('glow').checked=choice!=='low';$('shake').checked=choice==='high';
+ refreshDraft();
 };
 
 const scenarios={repeat:'Một người bình luận 10 lần',resume:'Quà khi tường đang 3/6',donors:'Hai người tặng cùng lúc',upgrade:'Tặng lại để nâng tường'};
@@ -266,7 +343,7 @@ async function refreshGallery(){
    const data=await response.json();
    function view(kind,id,replay=false){
      gallerySource=selected;
-     $('frame').src='/overlay.html?'+new URLSearchParams({preview:1,source:selected,kind,id,replay:replay?'1':'0'});
+     $('frame').src='/overlay.html?'+new URLSearchParams({preview:1,export:1,source:selected,kind,id,replay:replay?'1':'0'});
    }
    $('gallery-pages').replaceChildren(...(data.pages.length?data.pages.map(p=>{
      const b=el('button','Tường '+p.number+' · '+p.count+' người');b.onclick=()=>view('page',p.number);return b;
@@ -296,4 +373,21 @@ $('gallery-png').onclick=()=>{
    },'image/png');
  }catch{notice('Ảnh đại diện từ nguồn ngoài không cho phép xuất PNG.');}
 };
-$('gallery-exit').onclick=()=>{setSource(gallerySource??source);gallerySource=null;};
+$('gallery-exit').onclick=()=>setSource('live');
+const wallPicker=$('wall-picker');
+for(const [id,name] of walls.entries()){
+ const option=el('option',name);option.value=id;$('wallTheme').append(option);
+ const tile=el('button'),img=el('img');img.src=wallAsset(id,true);img.alt='';img.loading='lazy';
+ tile.dataset.wall=id;tile.append(img,el('span',name));
+ tile.onclick=()=>{$('wallTheme').value=id;updateWallSelection();refreshDraft();};
+ wallPicker.append(tile);
+}
+function updateWallSelection(){
+ for(const tile of wallPicker.children)tile.setAttribute('aria-pressed',String(tile.dataset.wall===$('wallTheme').value));
+}
+for(const [index,item] of manifest.guns.entries()){
+ const label=el('label'),img=el('img'),check=el('input');
+ img.src='/v2/lite/'+gunAsset(index).split('/').at(-1).replace(/\.png$/,'.webp');
+ img.alt='';img.loading='lazy';check.type='checkbox';check.value=index;
+ label.append(img,check,el('span',item.display_name||item.name||item.id));$('gun-pool').append(label);
+}

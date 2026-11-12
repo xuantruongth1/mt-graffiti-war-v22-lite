@@ -24,3 +24,29 @@
 .slot-fields{display:grid;grid-template-columns:1fr 1fr;gap:5px}.slot-fields strong{grid-column:1/-1;font-size:12px}.gallery-row{padding:8px 0;border-bottom:1px solid #2c3d5d}.gallery-row strong{flex:1;font-size:13px}
 
 .preview-state{flex-wrap:wrap}.preview-state [data-source]{font-weight:800}.preview-state [data-source=live]{color:#73e0ad}.preview-state [data-source=demo]{color:#ffc77b}.preview-state [data-source=gallery]{color:#c4acff}
+
+/* Studio controls and support follow the light blue Tiệc Cưới layout. */
+:root{color-scheme:light;--line:#cbdaf0;--muted:#405a79;--blue:#215ee0;color:#142845;background:#eff5ff}
+.shell,.nav-hidden .shell{background:#eff5ff}.nav,.preview{background:#f8fbff;border-color:var(--line)}
+header,.card{background:#fff;border-color:var(--line)}.card{box-shadow:0 5px 18px #173b7610}
+.nav button,.head-title small,.brand small{color:#28528e}.nav button.active,.nav button:hover{color:#164bb2;background:#e5efff;border-color:#b7ccf0}
+button,.button{background:#edf4ff;color:#153f83;border-color:#b7ccef}.primary{background:linear-gradient(120deg,#2165ea,#3159ce);color:#fff;border-color:#215ada}.danger{color:#a31a35;background:#fff1f4;border-color:#ecc1ca}
+button:disabled{opacity:.55;cursor:default}
+input:not([type=checkbox]),select{background:#f8fbff;color:#142845;border-color:#b8cbed}
+label,li{color:#284969}.pill{background:#e7f1ff;color:#214b89;border-color:#bdd2f3}
+.hero{color:#fff}.hero p{color:#e1ecff}
+.preview-state [data-source=live]{color:#16704b}.preview-state [data-source=demo]{color:#934900}.preview-state [data-source=gallery]{color:#663bb1}
+.draft-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.draft-bar b{font-size:13px}.session{flex-wrap:wrap}.session button{min-height:36px}
+.wall-grid,.gun-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin:12px 0 20px}
+.wall-grid button,.gun-grid label{display:grid;position:relative;gap:6px;padding:7px;text-align:center;border-radius:10px;background:#f4f8ff;border:1px solid var(--line)}
+.wall-grid button[aria-pressed=true],.gun-grid label:has(input:checked){border-color:#3d72dd;background:#e4efff}
+.wall-grid img,.gun-grid img{display:block;width:100%;height:86px;object-fit:cover;border-radius:6px;background:#132745}
+.wall-grid img{object-position:center 43%}.gun-grid img{object-fit:contain}.gun-grid input{position:absolute;top:9px;left:9px}
+.tier{display:block;background:#f7faff;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px}
+.tier-heading{display:flex;gap:10px;align-items:center}.tier-heading .tier-thumb{width:54px;height:57px}.tier-heading small{margin-left:auto}.tier details{margin-top:8px}.tier summary{cursor:pointer;color:#244e92;font-size:13px}.tier-fields{margin-top:8px}
+.support-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:16px}
+.support-grid figure{margin:0;text-align:center;border:1px solid var(--line);border-radius:12px;padding:12px;background:#f5f9ff}
+.support-grid img{display:block;width:100%;height:245px;object-fit:contain}.support-grid figcaption{font-size:13px;color:#244e92;margin-top:8px}
+.guide{width:min(880px,100%);margin:auto}.guide h1{font-size:42px;margin:22px 0}.guide-header{position:static;border:1px solid var(--line);border-radius:12px}
+@media(max-width:900px){header .actions{flex-wrap:wrap}.draft-bar .actions{width:100%}.tier-heading{flex-wrap:wrap}}

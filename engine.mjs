@@ -1,6 +1,6 @@
 import {planPainting,TIMELINE_VERSION} from './scene-plan.mjs';
 import { randomUUID } from 'node:crypto';
-import {manifest,tierSpecs,shotGaps,shotCounts,timeline,wallRules,wallScale} from './v2.mjs';
+import {manifest,defaultHud,tierSpecs,shotGaps,shotCounts,timeline,wallRules,wallScale} from './v2.mjs';
 import { extent,WALL_TOP,WALL_BOTTOM } from './stage-layout.mjs';
 
 export const names=['Nét màu','Mưa màu','Pháo giấy','Chữ neon','Rồng sắc màu','Siêu VIP Pro'];
@@ -12,7 +12,7 @@ export const items=[...names,'Sóng cầu vồng','Cánh phượng','Tẩy sơn'
 const timingDefaults=(i)=>({life:tierSpecs[i].holdSeconds,seconds:tierSpecs[i].durationMs/1000,shots:shotCounts[i],gap:shotGaps[i],bombs:tierSpecs[i].grenades,flight:tierSpecs[i].shotFlightMs,bombFlight:tierSpecs[i].grenadeFlightMs,recoil:tierSpecs[i].weaponAnimation?.recoilDistancePx??8,skin:'auto'});
 export const defaults={
   version:3,perfRevision:1,speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
-  gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,fps:30,renderWidth:1080,previewWidth:540,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
+  gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,hud:defaultHud,wallTheme:0,gunRotate:false,gunPool:[0,1,2,3,4,5,6,7,8,9],fps:30,renderWidth:1080,previewWidth:540,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
   free:{...timingDefaults(0),effect:'Nét tên'},
   rows:tierSpecs.slice(1).map((spec,i)=>({...timingDefaults(i+1),min:spec.minimum,size:[230,300,375,450,635,850][i],effect:names[i],hold:donorHolds[i]})),
   mapping:{}
@@ -41,12 +41,11 @@ const palette=['#29e9e6','#fb49a9','#ffbc3e','#a280ff','#87ef5a','#ff6350'];
 
 export function ingest(s,c,type,d,now=Date.now()){
   const uid=String(d.userId||'').slice(0,90);
-  if(!uid||!['gift','chat'].includes(type))return;
-  if(type==='chat'&&!String(d.comment||'').trim())return;
-  if(type==='gift'&&d.giftType==1&&d.repeatEnd===false)return;
-  if(type==='gift'&&d.giftType==1&&d.repeatEnd==null&&!(d.comboId||d.groupId||d.group_id))return;
+  if(!['gift','chat'].includes(type))return;
+  if(type==='chat'&&(!uid||!String(d.comment||'').trim()))return;
   const key=d.msgId&&d.msgId!=='0'?type+'|'+d.msgId:'';
   if(key&&s.seen.includes(key))return;
+  if(type==='gift'&&d.giftType==1&&(d.repeatEnd===false||d.repeatEnd===0))return;
   const prior=Object.hasOwn(s.scores,uid)?s.scores[uid]:null;
   if(type!=='gift'&&prior?.free&&now-prior.free<rules.commentCooldownSeconds*1000){
     if(key){s.seen.push(key);if(s.seen.length>12000)s.seen.shift();}
@@ -57,16 +56,18 @@ export function ingest(s,c,type,d,now=Date.now()){
   const unit=Number.isSafeInteger(reported)&&reported>0?reported:Number(Object.hasOwn(c.values,giftId)?c.values[giftId]:0);
   let coins=0,comboTotal=0;
   if(type==='gift'){
-    if(!Number.isSafeInteger(unit)||unit<1||!Number.isSafeInteger(count)||count<1){
+    const group=d.comboId||d.groupId||d.group_id;
+    const ambiguous=d.giftType==1&&d.repeatEnd==null&&!group&&count>1;
+    const reason=!uid?'Thiếu UID':ambiguous?'Thiếu dấu kết thúc combo':'Chưa xác nhận giá hoặc số lượng';
+    if(!uid||ambiguous||!Number.isSafeInteger(unit)||unit<1||!Number.isSafeInteger(count)||count<1){
       s.pending??=[];if(!key||!s.pending.some(p=>p.eventKey===key)){
-        s.pending.unshift({gift:giftId,uid,at:now,count:Number.isFinite(count)?count:0,eventKey:key,
+        s.pending.unshift({gift:giftId,uid,at:now,count:Number.isFinite(count)?count:0,eventKey:key,reason,
           event:{userId:uid,msgId:d.msgId,giftId,repeatCount:count,giftType:d.giftType,repeatEnd:d.repeatEnd,
             comboId:d.comboId||d.groupId||d.group_id,nickname:String(d.nickname||'').slice(0,100),profilePictureUrl:String(d.profilePictureUrl||'').slice(0,2048)}});
         s.pending.length=Math.min(1000,s.pending.length);
       }
       return;
     }
-    const group=d.comboId||d.groupId||d.group_id;
     const combo=group?JSON.stringify([uid,giftId,String(group)]):'';
     const previous=combo?s.combos[combo]?.count??0:0;
     coins=Math.min(1e9,unit*Math.max(0,count-previous));
@@ -101,7 +102,7 @@ export function retryPending(s,c,now=Date.now()){
  let resolved=0,expired=0;
  for(const row of backlog.slice().reverse()){
    if(now-row.at>86400000){expired++;continue;}
-   if(!row.event||!Object.hasOwn(c.values,row.gift)||row.count<1){s.pending.unshift(row);continue;}
+   if(!row.event||!row.uid||row.reason==='Thiếu dấu kết thúc combo'||!Object.hasOwn(c.values,row.gift)||row.count<1){s.pending.unshift(row);continue;}
    ingest(s,c,'gift',row.event,now);resolved++;
  }
  return {resolved,expired};
@@ -146,10 +147,13 @@ function displayJob(s,c,job,now){
   const sequence=timeline(level,setting,c.speed);
   const start=now,drawStart=now+(job.coins?220:90)/c.speed;
   let land=drawStart+sequence.duration;
-  const hold=job.coins?(s.queue.length>=15?1:setting.hold??donorHolds[job.tier])*1000:0;
+  const hold=job.coins?(setting.hold??donorHolds[job.tier])*1000:0;
+  const pool=c.gunPool?.length?c.gunPool:defaults.gunPool;
+  const gunSkin=c.gunRotate?pool[(s.gunCursor??0)%pool.length]:c.gun;
+  if(c.gunRotate)s.gunCursor=(s.gunCursor??0)+1;
 
   const skin=manifest.skins.includes(setting.skin)?setting.skin:manifest.skins[seed%manifest.skins.length];
-  const common={...job,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
+  const common={...job,wallTheme:c.wallTheme??0,gunSkin,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
     recoil:setting.recoil,canSpray:c.mixSpray&&level>0&&level<3&&seed%5===0};
   if(job.coins){
     const tier=Math.max(job.tier,donor?.tier??0);
@@ -192,7 +196,8 @@ export function tick(s,c,now=Date.now()){
     s.teams=[0,0];s.scene=null;s.round++;s.ends=c.minutes?now+c.minutes*60000:0;
   }
   s.scene=null;
-  const gift=s.queue.filter(j=>j.coins&&now-j.at>=500).sort((a,b)=>b.tier-a.tier||a.at-b.at)[0];
+  if(s.presentationPaused)return;
+  const gift=s.queue.filter(j=>j.coins&&now-j.at>=500).sort((a,b)=>{const agedA=now-a.at>=45000,agedB=now-b.at>=45000;return agedA||agedB?Number(agedB)-Number(agedA)||a.at-b.at:b.tier-a.tier||a.at-b.at;})[0];
   const comment=s.queue.find(j=>!j.coins);
   if(s.wallMode==='gift'){
     if(!gift||(comment&&s.giftRun>=3)){

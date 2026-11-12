@@ -2,6 +2,13 @@ import manifest from './v2/assets_manifest.json' with {type:'json'};
 import config from './v2/gift_tiers_config.json' with {type:'json'};
 import wallRules from './v2/wall_rules.json' with {type:'json'};
 export {manifest,wallRules};
+export const defaultHud={
+ title:{x:35,y:46,w:1010,visible:true},
+ vip:{x:282,y:157,w:516,visible:true},
+ note:{x:180,y:1790,w:720,visible:true}
+};
+export const walls=['Sân bê tông gốc','Neon Cyberpunk','Thành cổ','Xưởng thép','Sân Tết','Thành băng','Tường thiên hà','Tường biển'];
+export const wallAsset=(id,preview=false)=>id>0&&id<walls.length?'/v2/walls/wall-'+id+'.webp':preview?'/v2/lite/wall.webp':'/v2/wall.png';
 export const tierSpecs=config.tiers;
 export const shotGaps=tierSpecs.map(t=>t.shotIntervalMs??0);
 export const shotCounts=tierSpecs.map(t=>t.shots);

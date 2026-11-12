@@ -1,8 +1,8 @@
 # MT Graffiti War V3 · Chạy local trên Windows
 
 - Bản web: chạy **start.bat** bằng Node.js 22 trở lên rồi mở **http://127.0.0.1:3197/**. Trong OBS hoặc TikTok LIVE Studio, dùng link từ nút **Sao chép link LIVE**, nguồn trình duyệt 1080 × 1920.
-- Bản Windows: mở **MT Graffiti War V3.1.exe** trong thư mục **MT-Graffiti-V3.1-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
-- Kết nối thực tế dùng adapter **E:\ChatGPT\Tiktok\shared\tiktok-live** đang có trên máy. Khi chuyển máy, có thể dùng **GRAFFITI_CONNECTOR** và **GRAFFITI_CATALOG** để trỏ tới adapter và danh mục quà phù hợp.
+- Bản Windows: mở **MT Graffiti War V3.2.exe** trong thư mục **MT-Graffiti-V3.2-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
+• Adapter LIVE là tùy chọn. Đặt GRAFFITI_CONNECTOR trỏ tới DirectLive module, GRAFFITI_CATALOG trỏ đến catalog.json nếu có. Studio và DEMO chạy khi chưa cấu hình adapter.
 - Cấu hình tự lưu trong thư mục dữ liệu cục bộ. **Hiệu ứng & bố cục** có nút sao lưu và khôi phục JSON.
 
 ## Bảy bậc mặc định
@@ -64,3 +64,17 @@ Chọn độ phân giải LIVE và FPS riêng trong Hiệu ứng & bố cục. M
 Có thể thêm `?clean=1` vào link overlay để ẩn nút âm thanh. `?clean=1&audio=1` yêu cầu bật AudioContext khi tải trang. Âm thanh tự phát phụ thuộc chính sách trình duyệt/OBS; hãy xác minh bằng cảnh thử trước khi dùng.
 
 Để đo nhanh bằng Chrome, cài Playwright trong thư mục làm việc rồi chạy `node benchmark-v31.mjs performance-v31.json`. Có thể đặt `GRAFFITI_CHROME` nếu muốn dùng Chrome có sẵn và `GRAFFITI_PLAYWRIGHT` nếu Playwright nằm ngoài repo. Bài đo dùng thư mục dữ liệu tạm, giữ Studio và overlay mở, đưa tab DEMO lên trước và ghi JSON ở 1080p/30 và 720p/60. Số liệu này dùng để kiểm tra nhanh trên Chromium; OBS cần bài đo riêng.
+
+## V3.2
+
+Studio tách bản nháp, DEMO và cấu hình LIVE. Nút Thử trong DEMO chỉ gửi cấu hình cho phòng thử. Áp dụng lên LIVE kiểm tra phiên bản để tránh ghi đè từ tab khác. Hoàn tác đưa cấu hình trước đó trở lại bản nháp để bạn xem và áp dụng.
+
+Trong Hiệu ứng & bố cục có nền gốc và 7 bối cảnh mới. Bảy nền mới được tạo bằng ImageGen theo yêu cầu ảnh dọc 9:16, tường trống chiếm khoảng 24–68% chiều cao, camera chính diện, không chữ, chừa mặt sân. Các chủ đề là neon xanh, thành cổ, xưởng thép, sân Tết, băng, thiên hà và biển. Ảnh được xuất WebP vào v2/walls.
+
+Skin & bom sơn cho chọn skin theo bậc, chọn một skin cố định hoặc đánh dấu nhóm tối đa 10 skin để đổi tuần tự mỗi lượt vẽ. Tường và skin của lượt được ghi vào dữ liệu phát lại.
+
+Link LIVE sao chép từ Studio có tham số renderer=obs để nhận diện nguồn OBS do người dùng chọn. Ảnh QR được lấy từ bộ Tiệc Cưới Mai Trường đang có trên máy và chỉ hiện trong Studio/Hướng dẫn. Trước khi chuyển khoản, hãy đối chiếu người nhận trong ứng dụng ngân hàng.
+
+Để kiểm logic V3.2 chạy node test-v32.mjs cùng các bài V2 và V3. Để rollback dùng lại thư mục portable trước. Sao lưu studio.json và studio.json.bak khi cả hai launcher đã tắt.
+
+Kiểm tra giao diện với Playwright bằng node test-ui-v32.mjs <thư_mục_ảnh>. Dùng các biến GRAFFITI_CHROME và GRAFFITI_PLAYWRIGHT như bài benchmark.
