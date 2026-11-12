@@ -1,7 +1,7 @@
 param([string]$NodePath=(Get-Command node.exe).Source)
 $ErrorActionPreference='Stop'
 $source=$PSScriptRoot
-$package=Join-Path (Split-Path $source -Parent) 'MT-Graffiti-V3-Portable'
+$package=Join-Path (Split-Path $source -Parent) 'MT-Graffiti-V3.1-Portable'
 $runtime=Join-Path $package 'runtime'
 $dest=Join-Path $package 'app'
 New-Item -ItemType Directory -Force $runtime,$dest | Out-Null
@@ -11,7 +11,7 @@ foreach($file in 'package.json','server.mjs','engine.mjs','studio.js','overlay.j
 }
 Copy-Item -LiteralPath (Join-Path $source 'HUONG-DAN.md') -Destination $package -Force
 Copy-Item -LiteralPath (Join-Path $source 'v2') -Destination $dest -Recurse -Force
-$exe=Join-Path $package 'MT Graffiti War V3.exe'
+$exe=Join-Path $package 'MT Graffiti War V3.1.exe'
 $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 & $csc /nologo /codepage:65001 /target:winexe "/out:$exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll (Join-Path $source 'Launcher.cs')
 if($LASTEXITCODE -ne 0){throw 'Không biên dịch được launcher Windows.'}

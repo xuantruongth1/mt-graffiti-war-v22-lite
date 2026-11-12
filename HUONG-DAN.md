@@ -1,7 +1,7 @@
 # MT Graffiti War V3 · Chạy local trên Windows
 
 - Bản web: chạy **start.bat** bằng Node.js 22 trở lên rồi mở **http://127.0.0.1:3197/**. Trong OBS hoặc TikTok LIVE Studio, dùng link từ nút **Sao chép link LIVE**, nguồn trình duyệt 1080 × 1920.
-- Bản Windows: mở **MT Graffiti War V3.exe** trong thư mục **MT-Graffiti-V3-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
+- Bản Windows: mở **MT Graffiti War V3.1.exe** trong thư mục **MT-Graffiti-V3.1-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
 - Kết nối thực tế dùng adapter **E:\ChatGPT\Tiktok\shared\tiktok-live** đang có trên máy. Khi chuyển máy, có thể dùng **GRAFFITI_CONNECTOR** và **GRAFFITI_CATALOG** để trỏ tới adapter và danh mục quà phù hợp.
 - Cấu hình tự lưu trong thư mục dữ liệu cục bộ. **Hiệu ứng & bố cục** có nút sao lưu và khôi phục JSON.
 
@@ -56,3 +56,11 @@ Dữ liệu phiên V2.2 được sao lưu vào `studio.pre-v3.*.json` lần đ�
 - `v2/hands/spray.webp` và `v2/hands/toss.webp` là hai sprite bổ sung được tạo bằng ImageGen rồi cắt, thu nhỏ và xuất WebP alpha.
 - Yêu cầu hình: hai vật thể độc lập trên nền trong suốt, phong cách graffiti góc nhìn thứ nhất. Bên trái là bàn tay đeo găng đen cầm bình sơn kim loại cyan/magenta. Bên phải là bàn tay đeo găng hở ngón đang mở theo tư thế vừa ném. Thân găng có vệt màu sơn, các vật thể đủ khoảng cách để cắt riêng.
 - `v2/weapon-anchors.json` lưu điểm nòng và tâm xoay ước lượng riêng theo 10 PNG góc nhìn thứ nhất. Những sprite này là ảnh tĩnh có biến đổi trong Canvas.
+
+## V3.1 và chẩn đoán
+
+Chọn độ phân giải LIVE và FPS riêng trong Hiệu ứng & bố cục. Mặc định LIVE 1080 × 1920 ở 30 FPS. Preview giữ nhịp 30 FPS và có độ phân giải riêng. Studio hiển thị mẫu LIVE từ overlay đang vẽ; khi nguồn LIVE đóng hoặc đứng yên, mục này báo chưa có mẫu hoạt động. Nút tải 100 lượt trong 10 giây chỉ dùng dữ liệu DEMO.
+
+Có thể thêm `?clean=1` vào link overlay để ẩn nút âm thanh. `?clean=1&audio=1` yêu cầu bật AudioContext khi tải trang. Âm thanh tự phát phụ thuộc chính sách trình duyệt/OBS; hãy xác minh bằng cảnh thử trước khi dùng.
+
+Để đo nhanh bằng Chrome, cài Playwright trong thư mục làm việc rồi chạy `node benchmark-v31.mjs performance-v31.json`. Có thể đặt `GRAFFITI_CHROME` nếu muốn dùng Chrome có sẵn và `GRAFFITI_PLAYWRIGHT` nếu Playwright nằm ngoài repo. Bài đo dùng thư mục dữ liệu tạm, giữ Studio và overlay mở, đưa tab DEMO lên trước và ghi JSON ở 1080p/30 và 720p/60. Số liệu này dùng để kiểm tra nhanh trên Chromium; OBS cần bài đo riêng.

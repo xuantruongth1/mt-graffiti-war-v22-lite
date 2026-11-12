@@ -22,3 +22,5 @@
 #props .fields{margin-top:12px}.tier-fields{grid-template-columns:repeat(auto-fit,minmax(99px,1fr))}.tier[data-level="0"] .tier-fields{grid-template-columns:repeat(auto-fit,minmax(99px,1fr))}
 
 .slot-fields{display:grid;grid-template-columns:1fr 1fr;gap:5px}.slot-fields strong{grid-column:1/-1;font-size:12px}.gallery-row{padding:8px 0;border-bottom:1px solid #2c3d5d}.gallery-row strong{flex:1;font-size:13px}
+
+.preview-state{flex-wrap:wrap}.preview-state [data-source]{font-weight:800}.preview-state [data-source=live]{color:#73e0ad}.preview-state [data-source=demo]{color:#ffc77b}.preview-state [data-source=gallery]{color:#c4acff}

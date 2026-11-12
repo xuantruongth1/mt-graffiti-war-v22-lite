@@ -8,11 +8,30 @@ import {manifest,tierSpecs,timeline,v2Frame,gunAsset,grenadeAsset,fxAsset,wallSc
 const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d',{alpha:false});
 const params=new URLSearchParams(location.search),preview=params.has('preview'),source=params.get('source')==='demo'?'demo':'live';
 const button=document.querySelector('#sound'),background=new Image();background.src=preview?'/v2/lite/wall.webp':'/v2/wall.png';
-let state,audio,enabled=false,lastFrame=0,frames=0,sampleAt=performance.now(),lastWall=1;
+let state,audio,enabled=false,nextFrame=0,lastActive=0,sampleAt=performance.now(),lastWall=1;
 const images=new Map(),recipes=new Map(),heard=new Set(),floor=[];
 const assets=new Map(),paintCache=new Map(),nameCache=new Map();
 let dirty=true,nextIdle=0,wasMoving=false;
-const low=()=>preview||state?.config.fps!==60;
+const low=()=>preview||(state?.config.particles??35)<30;
+let intervals=[],drawTimes=[],assetTimes=[];
+function sampleRender(time,moving,width,height){
+ if(moving){
+   if(lastActive&&time-lastActive<10000)intervals.push(time-lastActive);
+   lastActive=time;
+ }else lastActive=0;
+ if(time-sampleAt<2000&&moving)return;
+ if(time-sampleAt<2000&&!wasMoving)return;
+ const target=1000/(preview?30:(state?.config.fps??30));
+ const count=intervals.length,total=intervals.reduce((sum,n)=>sum+n,0);
+ const dropped=intervals.reduce((sum,n)=>sum+Math.max(0,Math.round(n/target)-1),0);
+ const sorted=intervals.sort((a,b)=>a-b);
+ const q=(arr,p)=>Math.round((arr[Math.max(0,Math.ceil(arr.length*p)-1)]??0)*10)/10;
+ const sample={fps:count?Math.round(1000*count/total):0,p50:q(sorted,.5),p95:q(sorted,.95),p99:q(sorted,.99),drawP95:q(drawTimes.sort((a,b)=>a-b),.95),assetP95:q(assetTimes.sort((a,b)=>a-b),.95),dropRate:count?Math.round(dropped/(count+dropped)*1000)/10:0,width,height,active:moving&&count>0};
+ intervals=[];drawTimes=[];assetTimes=[];sampleAt=time;
+ if(params.get('diagnostics')==='1')window.dispatchEvent(new CustomEvent('graffiti-render',{detail:sample}));
+ if(preview)parent.postMessage({graffitiFps:sample.fps,graffitiIdle:!sample.active},location.origin);
+ else if(source==='live'&&!galleryKind)void fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'render-metrics',sample}),signal:AbortSignal.timeout(3000)}).catch(()=>{});
+}
 const liteUrl=url=>'/v2/lite/'+url.split('/').at(-1).replace(/\.png$/,'.webp');
 background.onload=()=>{dirty=true;};
 function remember(cache,key,value,max){
@@ -20,25 +39,47 @@ function remember(cache,key,value,max){
  if(cache.size>max)cache.delete(cache.keys().next().value);
  return value;
 }
-function asset(url){
- if(!assets.has(url)){
-   const img=new Image();
-   img.onload=()=>{dirty=true;};
-   remember(assets,url,img,24);
-   img.src=url;
-   img.onerror=()=>console.warn('Không tải được asset',url);
-
+function cached(cache,key){
+ const value=cache.get(key);
+ if(value){cache.delete(key);cache.set(key,value);}
+ return value;
+}
+function trimPixels(cache,maxBytes,maxEntries){
+ const bytes=image=>(image.naturalWidth??image.width)*(image.naturalHeight??image.height)*4;
+ let used=0;
+ for(const image of cache.values())used+=bytes(image);
+ while(cache.size>1&&(used>maxBytes||cache.size>maxEntries)){
+   const key=cache.keys().next().value;
+   used-=bytes(cache.get(key));cache.delete(key);
  }
- const img=assets.get(url);return img.complete&&img.naturalWidth?img:null;
+}
+function asset(url){
+ let img=cached(assets,url);
+ if(!img){
+   img=new Image();
+   const started=performance.now();
+   assets.set(url,img);
+   img.src=url;
+   img.decode().then(()=>{
+     if(assets.get(url)!==img)return;
+     assetTimes.push(performance.now()-started);
+     if(assetTimes.length>64)assetTimes.shift();
+     cached(assets,url);trimPixels(assets,64*1024*1024,32);dirty=true;
+   }).catch(()=>console.warn('Không tải được asset',url));
+   trimPixels(assets,64*1024*1024,32);
+ }
+ return img.complete&&img.naturalWidth?img:null;
 }
 const segmenter=new Intl.Segmenter('vi',{granularity:'grapheme'});
-button.hidden=preview;
+const clean=params.get('clean')==='1';
+button.hidden=preview||clean;
 function sound(on){
  enabled=on;
  if(on){audio??=new AudioContext();void audio.resume().catch(()=>{});}
- button.hidden=preview||on;
+ button.hidden=preview||clean||on;
 }
 button.onclick=()=>sound(true);
+if(clean&&params.get('audio')==='1')sound(true);
 addEventListener('message',e=>{if(preview&&e.origin===location.origin&&e.source===parent&&typeof e.data?.audio==='boolean')sound(e.data.audio);});
 let noise;
 function soundCue(kind,tier,volume){
@@ -83,7 +124,7 @@ if(galleryKind&&galleryId){
  const query=new URLSearchParams({source,kind:galleryKind,id:galleryId,replay:params.get('replay')??'0'});
  fetch('/api/gallery?'+query).then(r=>{if(!r.ok)throw Error('Không còn tường này.');return r.json();}).then(receive).catch(e=>console.warn(e.message));
 }else{
- const stream=new EventSource('/api/events?source='+source);
+ const stream=new EventSource('/api/events?view=overlay&source='+source);
  stream.onmessage=e=>receive(JSON.parse(e.data));
 }
 function cue(id,name,level){
@@ -131,21 +172,21 @@ function paintTile(m,width,height){
    RAINBOW_STREET:['#ff3c93','#fed544','#41efa4']
  };
  const key='paint:'+m.uid+':'+m.color+':'+m.skin+':'+width+':'+height;
- if(paintCache.has(key))return paintCache.get(key);
+ const hit=cached(paintCache,key);if(hit)return hit;
  const tile=document.createElement('canvas');
  tile.width=Math.ceil(width);tile.height=Math.ceil(height*1.25);
  const g=tile.getContext('2d');g.translate(tile.width/2,tile.height*.43);
  paintStamp(g,0,0,width*.35,streetColors[m.skin]??streetColors.NEON_POP,hash(m.uid),2);
- return remember(paintCache,key,tile,24);
+ paintCache.set(key,tile);trimPixels(paintCache,32*1024*1024,24);return tile;
 }
 function frameTile(url,image,g){
  const key=url+':'+g.radius;
- if(paintCache.has(key))return paintCache.get(key);
+ const hit=cached(paintCache,key);if(hit)return hit;
  const tile=document.createElement('canvas'),scale=preview?.75:1;
  tile.width=Math.ceil((g.left+g.right)*scale);tile.height=Math.ceil((g.top+g.bottom)*scale);
  const ctx=tile.getContext('2d');ctx.scale(scale,scale);ctx.translate(g.left,g.top);
  drawFrame(ctx,image,g);
- return remember(paintCache,key,tile,24);
+ paintCache.set(key,tile);trimPixels(paintCache,32*1024*1024,24);return tile;
 }
 function commentTag(m,progress,opacity){
  const slot=wallRules.communityWall.slots[m.slot],p=clamp(progress);
@@ -253,7 +294,7 @@ function paintBolt(origin,target,p,colors,seed,level){
  const [x,y]=origin,[tx,ty]=target,bend=(seed%15)-7;
  const point=t=>[mix(x,tx,t)+Math.sin(t*Math.PI)*bend,mix(y,ty,t)-Math.sin(t*Math.PI)*18];
  const distance=Math.hypot(tx-x,ty-y),trail=Math.min(.30,100/Math.max(100,distance));
- const head=point(p),tail=point(Math.max(0,p-trail)),size=6+level*.8;
+ const head=point(p),tail=point(Math.max(0,p-trail)),size=3+level*.55;
  ctx.save();ctx.lineCap='round';ctx.strokeStyle=colors[0];ctx.lineWidth=size*1.55;
  ctx.beginPath();ctx.moveTo(...tail);ctx.lineTo(...head);ctx.stroke();
  disk(ctx,...head,size,colors[1]);disk(ctx,...head,size*.44,'#fff2d6');
@@ -407,15 +448,14 @@ function draw(time){
  const active=state?.scene;
  const moving=Boolean((move&&now<move.end)||(active&&now<Math.min(active.end,active.land+(active.coins?1450:0)))||dragTop);
  if(!dirty&&!moving&&!wasMoving&&time<nextIdle)return;
- if(time-lastFrame<(low()?29:14))return;
- const width=preview?540:1080,height=width*16/9;
+ const target=1000/(preview?30:(state?.config.fps??30));
+ if(time+1<nextFrame)return;
+ nextFrame=time-nextFrame>target?time+target:nextFrame+target;
+ const renderStarted=performance.now();
+ const width=preview?(state?.config.previewWidth??540):(state?.config.renderWidth??1080),height=width*16/9;
  if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
  ctx.setTransform(width/1080,0,0,height/1920,0,0);
- lastFrame=time;frames++;
- if(time-sampleAt>=1000){
-   if(preview)parent.postMessage({graffitiFps:Math.round(frames*1000/(time-sampleAt)),graffitiIdle:!moving},location.origin);
-   sampleAt=time;frames=0;
- }
+ sampleRender(time,moving,width,height);
  dirty=false;wasMoving=moving;
  nextIdle=floor.some(s=>now<s.until+250)?time+250:Infinity;
  backgroundAndFloor(now);
@@ -467,5 +507,6 @@ function draw(time){
  const note=scene?(scene.members??[scene]).map(m=>label(m).slice(0,17)).join(' · '):move&&now<move.end?'Đổi lớp sơn':state.giftQueued?'Đang chờ '+state.giftQueued+' lượt quà':state.winners.length||state.winningTeam?'Vinh danh · '+(state.winningTeam||label(state.winners[0])):'Bình luận để vẽ avatar';
  box(180,1790,720,63,18,'#141125d9');text(note,540,1822,27,'#fff2f8');
  if(source==='demo')text('PHÒNG THỬ',540,1890,16,'#bcddfb');
+ if(moving)drawTimes.push(performance.now()-renderStarted);
 }
 requestAnimationFrame(draw);

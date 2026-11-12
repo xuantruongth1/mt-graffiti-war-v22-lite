@@ -19,7 +19,9 @@ export function planPainting(mark,sequence){
  });
  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
    const px=left+width*(x+.5)/cols,py=top+height*(y+.5)/rows;
-   const step=steps.reduce((best,s)=>{
+   const last=steps.at(-1);
+   const finalDetail=g&&steps.length>1&&y>=rows-2&&Math.abs(x-(cols-1)/2)<2;
+   const step=finalDetail?last:steps.reduce((best,s)=>{
      const score=t=>Math.hypot((px-t.target[0])/width,(py-t.target[1])/height)/(t.kind==='bomb'?1.65:1);
      return score(s)<score(best)?s:best;
    });

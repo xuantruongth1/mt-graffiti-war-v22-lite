@@ -12,7 +12,7 @@ export const items=[...names,'Sóng cầu vồng','Cánh phượng','Tẩy sơn'
 const timingDefaults=(i)=>({life:tierSpecs[i].holdSeconds,seconds:tierSpecs[i].durationMs/1000,shots:shotCounts[i],gap:shotGaps[i],bombs:tierSpecs[i].grenades,flight:tierSpecs[i].shotFlightMs,bombFlight:tierSpecs[i].grenadeFlightMs,recoil:tierSpecs[i].weaponAnimation?.recoilDistancePx??8,skin:'auto'});
 export const defaults={
   version:3,perfRevision:1,speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
-  gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,fps:30,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
+  gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,fps:30,renderWidth:1080,previewWidth:540,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
   free:{...timingDefaults(0),effect:'Nét tên'},
   rows:tierSpecs.slice(1).map((spec,i)=>({...timingDefaults(i+1),min:spec.minimum,size:[230,300,375,450,635,850][i],effect:names[i],hold:donorHolds[i]})),
   mapping:{}
