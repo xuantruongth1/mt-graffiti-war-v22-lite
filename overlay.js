@@ -1,7 +1,7 @@
 import {planPainting} from './scene-plan.mjs';
 import weapons from './v2/weapon-anchors.json' with {type:'json'};
 import {faceRadius,palette,tierLevel,WALL_TOP,WALL_BOTTOM} from './stage-layout.mjs';
-import {clamp,mix,rand,disk,paintStamp} from './stage-art.mjs';
+import {clamp,mix,rand,disk,paintStamp,wallPanPositions,impactRadius,wallPigment} from './stage-art.mjs';
 import {frameGeometry,drawFrame} from './asset-layout.mjs';
 import {manifest,tierSpecs,timeline,defaultHud,wallAsset,v2Frame,gunAsset,grenadeAsset,fxAsset,wallScale,wallRules} from './v2.mjs';
 
@@ -198,10 +198,11 @@ function commentTag(m,progress,opacity){
  const slot=wallRules.communityWall.slots[m.slot],p=clamp(progress);
  const scale=m.artScale??1;
  const width=slot.finalPaintBoundingBoxPx.width*wallScale*scale,h=slot.finalPaintBoundingBoxPx.height*wallScale*scale;
- const splash=asset(fxAsset(hash(m.id)%7,hash(m.uid)%4)),tile=paintTile(m,width,h);
+ const splash=m.smartWall?null:asset(fxAsset(hash(m.id)%7,hash(m.uid)%4));
+ const tile=m.smartWall?null:paintTile(m,width,h);
  const spread=.66+.34*p,r=slot.avatarDiameterPx*wallScale*scale/2;
  ctx.save();ctx.globalAlpha=opacity;ctx.translate(m.x,m.y);
- ctx.drawImage(tile,-tile.width*spread/2,-tile.height*.43*spread,tile.width*spread,tile.height*spread);
+ if(tile)ctx.drawImage(tile,-tile.width*spread/2,-tile.height*.43*spread,tile.width*spread,tile.height*spread);
  if(splash){ctx.save();ctx.rotate((hash(m.uid)%31-15)*Math.PI/180);ctx.drawImage(splash,-width*spread/2,-h*spread/2,width*spread,h*spread);ctx.restore();}
  const face=clamp((p-.29)/.58);
  if(face>0){
@@ -253,37 +254,45 @@ function coverage(m,now){
  ctx.clip();
  return art;
 }
-function muralTile(m,art){
- const key='mural:'+m.id;
+function impactStamp(color,seed){
+ const key='pigment:'+color+':'+(seed%11);
  const hit=cached(paintCache,key);if(hit)return hit;
- const tile=document.createElement('canvas');tile.width=art.width;tile.height=art.height;
- const g=tile.getContext('2d'),seed=hash(m.id),mode=seed%5,colors=palette[baseLevel(m)];
- const w=tile.width,h=tile.height;
- g.fillStyle='#151127';g.globalAlpha=.84;g.fillRect(0,0,w,h);
- for(let i=0;i<9;i++){
-   const x=(i%3+.5)*w/3+(rand(seed+i)-.5)*94;
-   const y=(Math.floor(i/3)+.5)*h/3+(rand(seed+i+21)-.5)*68;
-   g.globalAlpha=.55+rand(seed+i+31)*.3;
-   paintStamp(g,x,y,133+rand(seed+i+9)*76,[colors[i%3],colors[(i+1)%3],colors[(i+2)%3]],seed+i*131,2);
- }
- g.globalAlpha=.86;g.lineWidth=9;g.lineJoin='round';
- for(let side=0;side<2;side++){
-   g.save();g.translate(side?w*.80:w*.20,h*.49);g.scale(side?-1:1,1);
-   g.strokeStyle='#1b1633';g.fillStyle=colors[(mode+side+1)%3];
-   for(let i=0;i<4;i++){
-     const a=i*Math.PI/4+mode*.24;
-     g.save();g.rotate(a);g.beginPath();
-     g.moveTo(-24,-20);g.lineTo(34,-80-mode*7);g.lineTo(106,-54+i*9);
-     g.lineTo(53,-8);g.lineTo(84,39);g.lineTo(-33,32);
-     g.closePath();g.fill();g.stroke();g.restore();
-   }
-   g.restore();
- }
+ const tile=document.createElement('canvas');tile.width=tile.height=512;
+ wallPigment(tile.getContext('2d'),color,seed%11);
  paintCache.set(key,tile);trimPixels(paintCache,32*1024*1024,24);return tile;
+}
+function landedPaint(m,now,art,visit){
+ const elapsed=now-m.drawStart;
+ for(const [index,step] of art.steps.entries()){
+   if(elapsed<step.impact)continue;
+   const spread=clamp((elapsed-step.impact)/280);
+   const radius=impactRadius(m,step,art.steps.length)*(.16+.84*Math.sqrt(spread));
+   visit(step,index,radius,spread);
+ }
+}
+function paintDeposits(m,now,art,opacity){
+ const colors=palette[baseLevel(m)];
+ ctx.save();ctx.globalCompositeOperation='screen';
+ landedPaint(m,now,art,(step,index,radius,spread)=>{
+   const [x,y]=step.target;
+   ctx.globalAlpha=opacity*(step.kind==='bomb'?.88:.72)*(.60+spread*.4);
+   const tile=impactStamp(colors[index%colors.length],step.seed);
+   ctx.drawImage(tile,x-radius*1.3,y-radius*1.3,radius*2.6,radius*2.6);
+ });
+ ctx.restore();
+}
+function clipLandedPaint(m,now,art){
+ ctx.beginPath();
+ landedPaint(m,now,art,(step,index,radius)=>{
+   const x=step.target[0]-m.x,y=step.target[1]-m.y;
+   ctx.moveTo(x+radius,y);ctx.arc(x,y,radius,0,Math.PI*2);
+ });
+ ctx.clip();
 }
 function tag(m,now,opacity){
  const elapsed=now-m.drawStart;
  if(m.community){
+   if(m.smartWall)paintDeposits(m,now,recipe(m),opacity);
    const shot=plan(m).steps.at(-1);
    if(elapsed>=shot.impact)commentTag(m,now>=m.land?1:clamp((elapsed-shot.impact)/Math.max(1,m.land-m.drawStart-shot.impact)),opacity);
    return;
@@ -292,16 +301,13 @@ function tag(m,now,opacity){
  const image=asset(preview&&!exporting?liteUrl(original):original);
  const art=recipe(m),finished=now>=m.land;
  if(!finished&&elapsed<art.steps[0].impact)return;
+ if(m.fullMural)paintDeposits(m,now,art,opacity);
  ctx.save();ctx.translate(m.x,m.y);ctx.globalAlpha=opacity;
- if(m.fullMural){
-   ctx.save();coverage(m,now);
-   ctx.drawImage(muralTile(m,art),art.left-m.x,art.top-m.y);
-   ctx.restore();
- }
  const {x,y,rx,ry}=g.portrait,face=finished?1:clamp((elapsed-art.avatarAt)/220);
  if(face){ctx.save();ctx.globalAlpha=opacity*face;avatar(m,x,y,rx,ry);ctx.restore();}
  if(image){
-   ctx.save();coverage(m,now);
+   ctx.save();
+   if(m.fullMural){clipLandedPaint(m,now,art);ctx.globalAlpha*=.82;}else coverage(m,now);
    ctx.drawImage(frameTile(preview&&!exporting?liteUrl(original):original,image,g),-g.left,-g.top,g.left+g.right,g.top+g.bottom);
    ctx.restore();
  }
@@ -316,23 +322,26 @@ function tag(m,now,opacity){
  }
  ctx.restore();
 }
-function panBackground(wall,offset,direction){
- const iw=wall.naturalWidth,ih=wall.naturalHeight;
- for(const [y,h,rate] of [[0,467,.36],[467,833,1],[1300,620,1.12]]){
-   const distance=rate===1?offset:offset+Math.sin(offset*Math.PI/1080)*(rate-1)*360;
-   const shift=((distance)%1080+1080)%1080;
-   const x=direction>0?-shift:shift;
-   for(const start of [x-1080,x,x+1080])ctx.drawImage(wall,0,y/1920*ih,iw,h/1920*ih,start,y,1080,h);
+function wallImage(theme){
+ return theme?asset(wallAsset(theme,preview))||background:background;
+}
+function drawWall(wall,x,mirrored){
+ if(!wall.complete||!wall.naturalWidth){
+   ctx.fillStyle='#4e4544';ctx.fillRect(x,0,1080,1920);return;
  }
+ if(!mirrored){ctx.drawImage(wall,x,0,1080,1920);return;}
+ ctx.save();ctx.translate(x+1080,0);ctx.scale(-1,1);
+ ctx.drawImage(wall,0,0,1080,1920);ctx.restore();
 }
 function backgroundAndFloor(now,move,p){
  const theme=state?.scene?.wallTheme??state?.wallTheme??0;
- const wall=theme?asset(wallAsset(theme,preview))||background:background;
- if(wall.complete&&wall.naturalWidth){
-   if(move?.kind==='smartPan')panBackground(wall,p*1080,move.direction);
-   else ctx.drawImage(wall,0,0,1080,1920);
- }
- else {ctx.fillStyle='#4e4544';ctx.fillRect(0,0,1080,1920);}
+ const number=state?.wallNumber??1;
+ const wall=wallImage(theme),mirrored=state?.config.smartWall&&number%2===0;
+ if(move?.kind==='smartPan'){
+   const {outgoing,incoming}=wallPanPositions(p);
+   drawWall(wallImage(move.oldTheme??theme),outgoing,(move.oldWallNumber??number-1)%2===0);
+   drawWall(wall,incoming,mirrored);
+ }else drawWall(wall,0,mirrored);
  for(const s of floor){
    if(now>=s.until||s.scene!==sceneKey()||state?.wallMove&&now<state.wallMove.end)continue;
    ctx.save();ctx.globalAlpha=.64*clamp((s.until-now)/2400);
@@ -452,7 +461,7 @@ function spray(m,now){
    }
    const settle=clamp(after*speed/(isShot?spec.impactExpandMs:spec.grenadeBloomMs));
    const r=m.community?(state.config.peak??315)*wallScale/2.4*(.07+.93*Math.sin(Math.PI/2*clamp(settle*2.7))):spec.damageRadius*wallScale*(isShot?1:2.15)*(.35+.65*clamp(settle*4));
-   const fx=asset(fxAsset(m.community?seed%7:level,i+(isShot?0:2)));
+   const fx=m.smartWall?null:asset(fxAsset(m.community?seed%7:level,i+(isShot?0:2)));
    ctx.save();ctx.beginPath();ctx.rect(0,WALL_TOP,1080,WALL_BOTTOM-WALL_TOP);ctx.clip();ctx.globalAlpha=(1-settle)*.90;
    if(!isShot&&state.config.shake&&after<135)ctx.translate(Math.sin(after/11)*7*(1-after/135),Math.sin(after/8)*4*(1-after/135));
    if(!isShot&&state.config.flash&&after<120){ctx.fillStyle=colors[1];ctx.globalAlpha=.12*(1-after/120);ctx.fillRect(0,WALL_TOP,1080,WALL_BOTTOM-WALL_TOP);ctx.globalAlpha=(1-settle)*.90;}
@@ -541,7 +550,7 @@ function draw(time){
    const p=phase;
    if(p<.28)cue('wall-'+move.start,'wall',0);
    if(move.kind==='smartPan'){
-     ctx.save();ctx.translate(-move.direction*pan*1080,0);paintLayer(move.oldMarks,now);ctx.restore();
+     ctx.save();ctx.translate(wallPanPositions(pan).outgoing,0);paintLayer(move.oldMarks,now);ctx.restore();
    }else if(move.kind==='communityFullToBlank'){
      ctx.save();ctx.beginPath();ctx.rect(1080*p,WALL_TOP,1080*(1-p),WALL_BOTTOM-WALL_TOP);ctx.clip();
      paintLayer(move.oldMarks,now,1);ctx.restore();

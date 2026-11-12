@@ -160,11 +160,11 @@ function nextSmartWall(s,c,mode,now){
    library.unshift({number:s.wallNumber,wallId:fromId,marks:old});
    library.length=Math.min(library.length,rules.newWallPolicy.preserveLastPages);
  }
- const direction=s.wallNumber%4<2?1:-1;
+ const oldWallNumber=s.wallNumber;
  s.wallNumber++;s.activeWallId=s.sessionId+':'+s.wallNumber;
  const pace={calm:1050,natural:840,lively:690}[c.cameraPace]??840;
  const duration=pace+(s.wallNumber%5-2)*25;
- s.wallMove={kind:'smartPan',direction,fromId,wallId:s.activeWallId,oldMarks:old,start:now,fadeEnd:now+duration,end:now+duration+180};
+ s.wallMove={kind:'smartPan',direction:1,oldWallNumber,oldTheme:old[0]?.wallTheme??c.wallTheme,fromId,wallId:s.activeWallId,oldMarks:old,start:now,fadeEnd:now+duration,end:now+duration+180};
  s.marks=[];s.community={marks:[],fullAt:0,pausedAt:null};s.wallMode=mode;s.donorUid=null;s.wallTouchedAt=s.wallMove.end;
 }
 function smartTick(s,c,gift,comment,now){

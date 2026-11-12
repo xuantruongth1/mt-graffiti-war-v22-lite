@@ -29,3 +29,38 @@ export function paintStamp(ctx,x,y,r,colors,seed,detail){
  }
  ctx.restore();
 }
+
+export function wallPanPositions(progress,width=1080){
+ const distance=clamp(progress)*width;
+ return {outgoing:0-distance,incoming:width-distance};
+}
+
+export function impactRadius(mark,step,stepCount){
+ if(mark.community)return 138*(mark.artScale??1);
+ if(step.kind==='bomb')return 244;
+ return stepCount<=5?232:stepCount<=12?165:132;
+}
+
+export function wallPigment(ctx,color,seed){
+ const center=256;
+ const mist=ctx.createRadialGradient(center,center,18,center,center,200);
+ mist.addColorStop(0,color+'bc');
+ mist.addColorStop(.45,color+'7c');
+ mist.addColorStop(1,color+'00');
+ ctx.fillStyle=mist;ctx.fillRect(56,56,400,400);
+ for(let i=0;i<130;i++){
+   const angle=rand(seed+i*23)*Math.PI*2;
+   const length=Math.sqrt(rand(seed+i*53))*221;
+   ctx.globalAlpha=(1-length/260)*(.24+rand(seed+i*71)*.6);
+   disk(ctx,center+Math.cos(angle)*length,center+Math.sin(angle)*length,1+rand(seed+i*43)*5,color);
+ }
+ ctx.globalAlpha=.55;
+ ctx.strokeStyle=color;ctx.lineCap='round';
+ for(let i=0;i<8;i++){
+   const x=center+(rand(seed+i*37+23)-.5)*235;
+   const y=center+45+rand(seed+i*91+2)*80;
+   ctx.lineWidth=1+rand(seed+i*61)*5;
+   ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+4,y+15,x,y+18+rand(seed+i*17)*100);ctx.stroke();
+ }
+ ctx.globalAlpha=1;
+}

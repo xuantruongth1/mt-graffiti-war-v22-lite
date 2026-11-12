@@ -51,3 +51,11 @@ for(const [i,coins] of [1,5,20,100,500,1000].entries()){
  assert.equal(q.marks[0].wallId,q.activeWallId);
 }
 console.log('PASS sáu bậc quà: phủ tường, số phát và bom giữ đúng mặc định.');
+
+const {wallPanPositions,impactRadius}=await import('./stage-art.mjs');
+assert.deepEqual(wallPanPositions(0),{outgoing:0,incoming:1080});
+assert.deepEqual(wallPanPositions(.5),{outgoing:-540,incoming:540});
+assert.deepEqual(wallPanPositions(1),{outgoing:-1080,incoming:0});
+assert(impactRadius({community:true,artScale:2},{kind:'shot'},2)>impactRadius({community:true},{kind:'shot'},2));
+assert(impactRadius({community:false},{kind:'bomb'},18)>impactRadius({community:false},{kind:'shot'},18));
+console.log('PASS camera: tường cũ dịch trái, tường mới vào từ phải, mép hai tường cùng tọa độ.');
