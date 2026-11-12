@@ -38,6 +38,7 @@ function updatePreview(){
  label.dataset.source=kind;
  label.textContent={gallery:'Thư viện',demo:'DEMO · Không phải LIVE',live:'LIVE · Màn trình diễn'}[kind];
  $('preview-placeholder').hidden=studioOnline&&frameReady;
+ $('preview-panel').setAttribute('aria-busy',String(studioOnline&&!frameReady));
  $('source').disabled=previewSource!=='demo';
  $('preview-placeholder').textContent=studioOnline?'Đang tải màn trình diễn…':serverOffline;
 }
@@ -52,7 +53,11 @@ function tab(name){
  else if(name!=='gallery')showPreview('live');
  $('live-controls').hidden=name!=='overview';
  for(const key of Object.keys(tabs))$(key).hidden=key!==name;
- for(const b of document.querySelectorAll('[data-tab]'))b.classList.toggle('active',b.dataset.tab===name);
+ for(const b of document.querySelectorAll('[data-tab]')){
+   const selected=b.dataset.tab===name;
+   b.classList.toggle('active',selected);
+   if(selected)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+ }
  $('page-title').textContent=tabs[name];
  if(name==='gallery')void refreshGallery();
 }
@@ -61,7 +66,56 @@ if(location.hash.startsWith('#guide-')){
  tab('support');
  document.getElementById(location.hash.slice(1))?.scrollIntoView();
 }
-$('menu').onclick=()=>document.body.classList.toggle('nav-hidden');
+const compactNav=matchMedia('(max-width: 920px)');
+function updateMenu(){
+ const toggled=document.body.classList.contains('nav-hidden');
+ $('menu').setAttribute('aria-expanded',String(compactNav.matches?toggled:!toggled));
+ $('nav-scrim').hidden=!(compactNav.matches&&toggled);
+}
+function closeDrawer(){
+ if(compactNav.matches){document.body.classList.remove('nav-hidden');updateMenu();$('menu').focus();}
+}
+$('menu').onclick=()=>{document.body.classList.toggle('nav-hidden');updateMenu();if(!$('nav-scrim').hidden)$('close-menu').focus();};
+$('close-menu').onclick=closeDrawer;
+$('nav-scrim').onclick=closeDrawer;
+$('studio-nav').addEventListener('click',event=>{if(event.target.closest('[data-tab]'))closeDrawer();});
+addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('nav-scrim').hidden)closeDrawer();});
+compactNav.addEventListener('change',()=>{document.body.classList.remove('nav-hidden');updateMenu();});
+updateMenu();
+const glyphs={
+ overview:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+ gifts:'M3 8h18v4H3z M5 12v9h14v-9 M12 8v13 M12 8c-7 0-7-7-3-5l3 5c7 0 7-7 3-5z',
+ props:'M4 20 19 5 M14 5h5v5 M4 14v6h6 M7 4v6 M4 7h6',
+ fx:'M4 6h16 M4 12h16 M4 18h16 M8 4v4 M15 10v4 M10 16v4',
+ round:'M8 3h8v5a4 4 0 0 1-8 0z M8 5H4v2a4 4 0 0 0 4 4 M16 5h4v2a4 4 0 0 1-4 4 M12 12v7 M8 21h8',
+ test:'M8 5l11 7-11 7z',
+ gallery:'M3 4h18v16H3z M3 16l6-5 4 3 3-3 5 5 M8 8h.01',
+ log:'M5 4h14v16H5z M8 8h8 M8 12h8 M8 16h5',
+ support:'M4 5h7a3 3 0 0 1 3 3v12a4 4 0 0 0-4-3H4z M14 8a3 3 0 0 1 3-3h3v12h-2a4 4 0 0 0-4 3',
+ menu:'M4 6h16 M4 12h16 M4 18h16',
+ copy:'M8 8h12v12H8z M4 16V4h12',
+ screen:'M3 4h18v13H3z M8 21h8 M12 17v4',
+ refresh:'M20 7v5h-5 M20 12a8 8 0 1 0-2 5',
+ link:'M8 12h8 M10 8H7a4 4 0 0 0 0 8h3 M14 8h3a4 4 0 0 1 0 8h-3',
+ unlink:'M9 15l6-6 M10 7H7a4 4 0 0 0 0 8 M14 17h3a4 4 0 0 0 0-8',
+ trash:'M4 7h16 M9 7V4h6v3 M7 7l1 13h8l1-13 M10 10v7 M14 10v7'
+};
+function addIcon(node,name){
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');
+ svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');
+ svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');
+ svg.setAttribute('aria-hidden','true');svg.classList.add('icon');
+ const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',glyphs[name]);svg.append(path);node.prepend(svg);
+}
+for(const button of document.querySelectorAll('[data-tab]')){
+ const label=button.textContent.trim();
+ button.title=label;button.setAttribute('aria-label',label);
+ const text=el('span',label);button.replaceChildren(text);addIcon(button,button.dataset.tab);
+ if(button.classList.contains('active'))button.setAttribute('aria-current','page');
+}
+for(const [id,glyph] of [['menu','menu'],['copy','copy'],['open-live','screen'],['preview-title','screen'],['refresh','refresh'],['disconnect','unlink'],['reset','trash']])addIcon($(id),glyph);
+addIcon($('connect-form').querySelector('button[type=submit]')??$('connect-form').querySelector('button'),'link');
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+'/overlay.html?renderer=obs');notice('Đã sao chép link OBS');}catch{notice(location.origin+'/overlay.html?renderer=obs');}};
 $('frame').onload=()=>{if(audio)$('frame').contentWindow.postMessage({audio},location.origin);};
 addEventListener('message',event=>{
@@ -77,7 +131,10 @@ $('refresh').onclick=()=>showPreview(previewSource,true);
 $('source').onclick=async()=>{await action('clear-demo',{},'Đã kết thúc lượt thử');showPreview('live');};
 $('open-live').onclick=()=>{showPreview('live');$('preview-panel').scrollIntoView({block:'nearest',behavior:'smooth'});};
 $('connect-form').onsubmit=e=>{e.preventDefault();action('connect',{username:$('username').value},'Đang yêu cầu kết nối…');};
-$('disconnect').onclick=()=>action('disconnect');$('reset').onclick=()=>{if(confirm('Xóa tường, TOP và nhật ký LIVE để bắt đầu phiên mới?')&&confirm('Xác nhận xóa dữ liệu phiên LIVE hiện tại?'))action('reset');};
+$('disconnect').onclick=()=>action('disconnect');
+const resetDialog=$('reset-dialog');
+$('reset').onclick=()=>{resetDialog.returnValue='';resetDialog.showModal();};
+resetDialog.addEventListener('close',()=>{if(resetDialog.returnValue==='reset')void action('reset');});
 $('next-round').onclick=()=>action('round',{source:'live'},'Đã chốt vòng LIVE');
 $('burst-fast').onclick=()=>action('burst',{rate:10},'Đang gửi 100 lượt thử trong 10 giây');
 $('clear').onclick=()=>action('clear-demo');$('burst').onclick=()=>action('burst',{},'Đang gửi 100 lượt thử trong 30 giây');
@@ -232,7 +289,12 @@ function renderList(id,items,format){
 function render(){
  if(!liveState)return;const s=liveState;
  $('status').textContent=s.status;
- $('status').dataset.state=s.connection?.state??'idle';
+ const connectionState=s.connection?.state??'idle';
+ $('status').dataset.state=connectionState;
+ const badge=$('header-live-status');
+ badge.dataset.state=connectionState;
+ const shortStatus={idle:'Chưa kết nối',connecting:'Đang kết nối',waiting:'Đã kết nối',connected:'Đang LIVE',retry:'Đang thử lại',offline:'LIVE đã kết thúc',error:'Lỗi kết nối'}[connectionState]??'Chưa kết nối';
+ if(badge.textContent!==shortStatus)badge.textContent=shortStatus;
  $('pause-live').disabled=s.paused;$('resume-live').disabled=!s.paused;
  $('m-marks').textContent=s.communityCount+' / '+s.config.max;$('m-queue').textContent=s.queue;$('m-round').textContent=s.round;
  renderList('top-list',s.top,x=>x.name+' · '+x.coins.toLocaleString('vi-VN')+' xu');
