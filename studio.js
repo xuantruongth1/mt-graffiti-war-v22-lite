@@ -1,3 +1,4 @@
+import {paintPalettes,paintRecipes} from './paint-recipes.mjs';
 import {frameGeometry,drawFrame} from './asset-layout.mjs';
 import {manifest,v2Frame,timeline,walls,wallAsset,gunAsset} from './v2.mjs';
 import {palette} from './stage-layout.mjs';
@@ -5,12 +6,12 @@ import {paintStamp} from './stage-art.mjs';
 const $=id=>document.getElementById(id);
 const names=['Nét màu','Mưa màu','Pháo giấy','Chữ neon','Rồng sắc màu','Siêu VIP Pro','Sóng cầu vồng','Cánh phượng','Tẩy sơn','Khiên màu','Vương miện','Tia sét','Sao vàng','Cầu vồng','Portal','Tim ma thuật'];
 const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
-const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','wallTheme','renderWidth','previewWidth','max','fullHold','wipeMs','peak','speed'],flags=['idlePan','gunRotate','scaleTransitions','flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
+const values=['particles','volume','safe','minutes','gun','grenade','gunScale','muzzleX','muzzleY','fps','wallTheme','renderWidth','previewWidth','max','fullHold','wipeMs','peak','speed'],flags=['drawViewers','idlePan','gunRotate','scaleTransitions','flash','anonymous','top','teams','showGun','sparks','shake','glow','mixSpray','accumulate'];
 const tabs={overview:'Tổng quan & Điều khiển LIVE',gifts:'Quà & vật phẩm',props:'Skin & bom sơn',fx:'Hiệu ứng & bố cục',round:'Vòng chơi & TOP',test:'Phòng thử hiệu ứng',gallery:'Thư viện tường',support:'Hướng dẫn & hỗ trợ',log:'Nhật ký phiên'};
 let current,liveState,demoState,audio=false,settingsLoaded=false,timer;
 function el(tag,text){const x=document.createElement(tag);if(text!=null)x.textContent=text;return x;}
 function notice(text){clearTimeout(timer);$('feedback').textContent=text;timer=setTimeout(()=>$('feedback').textContent='',5500);}
-const serverOffline='Mất kết nối với máy chủ game. Mở lại MT Graffiti War V3.3.exe và giữ cửa sổ launcher mở.';
+const serverOffline='Mất kết nối với máy chủ game. Mở lại MT Graffiti War V3.4.exe và giữ cửa sổ launcher mở.';
 function showDemoConnection(connected){
  $('test-timeline').textContent=connected?'Phòng thử đã kết nối.':serverOffline;
 }
@@ -137,6 +138,7 @@ $('reset').onclick=()=>{resetDialog.returnValue='';resetDialog.showModal();};
 resetDialog.addEventListener('close',()=>{if(resetDialog.returnValue==='reset')void action('reset');});
 $('next-round').onclick=()=>action('round',{source:'live'},'Đã chốt vòng LIVE');
 $('burst-fast').onclick=()=>action('burst',{rate:10},'Đang gửi 100 lượt thử trong 10 giây');
+$('test-viewer').onclick=()=>action('test-viewer',{count:1},'Đã đưa người vào xem vào hàng chờ thử');
 $('clear').onclick=()=>action('clear-demo');$('burst').onclick=()=>action('burst',{},'Đang gửi 100 lượt thử trong 30 giây');
 for(const [count,title] of Array.from({length:7},(_,i)=>[i+1,i===0?'Thử bình luận':(i+1)+' bình luận'])){
  const b=el('button',title);b.onclick=()=>action('test-chat',{count},'Đã đưa bình luận vào hàng chờ thử');$('test-buttons').append(b);
@@ -163,6 +165,7 @@ function read(){
  for(const key of values)config[key]=Number($(key).value);
  for(const key of flags)config[key]=$(key).checked;
  config.cameraPace=$('camera-pace').value;
+ for(const key of ['paintPalette','paintRecipe','paintIntensity'])config[key]=$(key).value;
  const rows=Array.from($('tiers').children,row=>Object.fromEntries(Array.from(row.querySelectorAll('input,select'),i=>[i.name,i.type==='number'?Number(i.value):i.value])));
  config.free={...current.free,...rows[0]};
  config.rows=rows.slice(1).map((row,i)=>({...current.rows[i],...row}));
@@ -249,6 +252,8 @@ function showConfig(first){
     document.getElementById('slot-settings').append(group);
   }for(const key of values)$(key).value=current[key];for(const key of flags)$(key).checked=current[key];
  $('camera-pace').value=current.cameraPace??'natural';
+ for(const key of ['paintPalette','paintRecipe','paintIntensity'])$(key).value=current[key];
+ showSwatches();
  for(const input of $('gun-pool').querySelectorAll('input'))input.checked=(current.gunPool??[]).includes(Number(input.value));
  updateWallSelection();
  [current.free,...current.rows].forEach((r,i)=>{
@@ -489,3 +494,14 @@ for(const [index,item] of manifest.guns.entries()){
  img.alt='';img.loading='lazy';check.type='checkbox';check.value=index;
  label.append(img,check,el('span',item.display_name||item.name||item.id));$('gun-pool').append(label);
 }
+
+for(const [id,items] of [['paintPalette',paintPalettes],['paintRecipe',paintRecipes]]){
+ for(const item of items){const option=el('option',item.id+' · '+item.name);option.value=item.id;$(id).append(option);}
+}
+function showSwatches(){
+ const palette=paintPalettes.find(x=>x.id===$('paintPalette').value);
+ $('paint-swatches').replaceChildren(...(palette?.colors??[]).map(color=>{
+   const chip=el('span');chip.style.backgroundColor=color;chip.title=color;return chip;
+ }));
+}
+$('paintPalette').addEventListener('change',showSwatches);

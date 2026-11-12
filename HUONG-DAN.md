@@ -1,7 +1,7 @@
 # MT Graffiti War V3 · Chạy local trên Windows
 
 - Bản web: chạy **start.bat** bằng Node.js 22 trở lên rồi mở **http://127.0.0.1:3197/**. Trong OBS hoặc TikTok LIVE Studio, dùng link từ nút **Sao chép link LIVE**, nguồn trình duyệt 1080 × 1920.
-- Bản Windows: mở **MT Graffiti War V3.3.exe** trong thư mục **MT-Graffiti-V3.3-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
+- Bản Windows: mở **MT Graffiti War V3.4.exe** trong thư mục **MT-Graffiti-V3.4-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
 - Bản portable kèm adapter và thư viện TikTok. Mở EXE rồi nhập tên TikTok trong Studio. Với mã nguồn chạy trực tiếp, chạy `npm ci --prefix adapter` một lần trước khi kết nối. `GRAFFITI_CONNECTOR` chỉ dùng khi cần chọn adapter khác.
 - Cấu hình tự lưu trong thư mục dữ liệu cục bộ. **Hiệu ứng & bố cục** có nút sao lưu và khôi phục JSON.
 
@@ -79,6 +79,14 @@ Link LIVE sao chép từ Studio có tham số renderer=obs để nhận diện n
 
 Kiểm tra giao diện với Playwright bằng node test-ui-v32.mjs <thư_mục_ảnh>. Dùng các biến GRAFFITI_CHROME và GRAFFITI_PLAYWRIGHT như bài benchmark.
 
-## V3.3 Smart Wall
+## V3.4 Smart Wall
 
 Mỗi bình luận bắn hai phát và nhóm từ một đến sáu tranh theo hàng chờ. Khi có quà, camera lướt từ tường cộng đồng sang tường quà trống. Bình luận tiếp theo mở tường mới. Dùng Tường & Camera để chọn nhịp và bật/tắt tự lướt khi rảnh. Kiểm tra luồng tường bằng `node test-v33.mjs`.
+
+## V3.4 Direct Wall
+
+Trong **Hiệu ứng & bố cục**, tùy chọn **Vẽ người vừa vào xem** bật mặc định. Game ưu tiên bình luận trước lượt vào xem. Khi cùng người đã chờ vì vừa vào và gửi bình luận, hàng đợi cập nhật lượt hiện có. Quà chờ xếp theo số xu của lượt, từ cao xuống thấp. **THANK YOU** hiện trên tường khi tranh quà hoàn tất.
+
+Trong **Quà & vật phẩm**, nhóm **Tranh & Màu** cho chọn 28 mẫu nét, 16 bảng màu và ba mức độ đậm. Chọn Tự động để game chọn theo bậc và tránh phối lặp trong các lượt gần đây. Thử bản nháp trong Phòng thử trước khi áp dụng lên LIVE.
+
+Kiểm logic mới bằng node test-v34.mjs. Sơn hiện từ điểm va chạm và giữ trong lớp màu của tường. Hình chân dung, tên và THANK YOU được vẽ trong vùng mặt tường.

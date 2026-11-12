@@ -1,3 +1,4 @@
+import {paintPalettes,paintRecipes,paintPools} from './paint-recipes.mjs';
 import {planPainting,TIMELINE_VERSION} from './scene-plan.mjs';
 import { randomUUID } from 'node:crypto';
 import {manifest,defaultHud,tierSpecs,shotGaps,shotCounts,timeline,wallRules,wallScale} from './v2.mjs';
@@ -11,7 +12,7 @@ export const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
 export const items=[...names,'Sóng cầu vồng','Cánh phượng','Tẩy sơn','Khiên màu','Vương miện','Tia sét','Sao vàng','Cầu vồng','Portal','Tim ma thuật'];
 const timingDefaults=(i)=>({life:tierSpecs[i].holdSeconds,seconds:tierSpecs[i].durationMs/1000,shots:shotCounts[i],gap:shotGaps[i],bombs:tierSpecs[i].grenades,flight:tierSpecs[i].shotFlightMs,bombFlight:tierSpecs[i].grenadeFlightMs,recoil:tierSpecs[i].weaponAnimation?.recoilDistancePx??8,skin:'auto'});
 export const defaults={
-  version:3,perfRevision:1,smartWall:false,idlePan:true,cameraPace:"natural",speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
+  version:3,perfRevision:1,smartWall:false,directPaint:false,drawViewers:true,paintPalette:"auto",paintRecipe:"auto",paintIntensity:"natural",idlePan:true,cameraPace:"natural",speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
   gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,hud:defaultHud,wallTheme:0,gunRotate:false,gunPool:[0,1,2,3,4,5,6,7,8,9],fps:30,renderWidth:1080,previewWidth:540,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
   free:{...timingDefaults(0),effect:'Nét tên'},
   rows:tierSpecs.slice(1).map((spec,i)=>({...timingDefaults(i+1),min:spec.minimum,size:[230,300,375,450,635,850][i],effect:names[i],hold:donorHolds[i]})),
@@ -41,7 +42,9 @@ const palette=['#29e9e6','#fb49a9','#ffbc3e','#a280ff','#87ef5a','#ff6350'];
 
 export function ingest(s,c,type,d,now=Date.now()){
   const uid=String(d.userId||'').slice(0,90);
-  if(!['gift','chat'].includes(type))return;
+  const viewer=type==='member';
+  if(!['gift','chat','member'].includes(type))return;
+  if(viewer&&(!c.drawViewers||!uid||s.marks.some(m=>m.community&&m.uid===uid)||s.queue.some(j=>!j.coins&&j.uid===uid)))return;
   if(type==='chat'&&(!uid||!String(d.comment||'').trim()))return;
   const key=d.msgId&&d.msgId!=='0'?type+'|'+d.msgId:'';
   if(key&&s.seen.includes(key))return;
@@ -85,15 +88,21 @@ export function ingest(s,c,type,d,now=Date.now()){
   let avatar='';
   try{const u=new URL(d.profilePictureUrl);if(u.protocol==='https:'&&!u.username&&!u.password&&/(^|\.)(tiktokcdn[^.]*\.com|tiktokcdn\.net|tiktokv\.com|byteoversea\.com|ibytedtos\.com)$/i.test(u.hostname))avatar=u.href;}catch{}
   const team=/^đỏ$/i.test(d.comment||'')?0:/^xanh$/i.test(d.comment||'')?1:prior?.team??(uid.codePointAt(0)%2);
-  Object.defineProperty(s.scores,uid,{enumerable:true,configurable:true,writable:true,value:{uid,name,coins:(prior?.coins||0)+coins,round:(prior?.round||0)+coins,team,free:coins?prior?.free||0:now}});
-  s.teams[team]+=coins||1;
+  if(!viewer)Object.defineProperty(s.scores,uid,{enumerable:true,configurable:true,writable:true,value:{uid,name,coins:(prior?.coins||0)+coins,round:(prior?.round||0)+coins,team,free:coins?prior?.free||0:now}});
+  if(!viewer)s.teams[team]+=coins||1;
   const pending=coins?s.queue.findLast(p=>p.uid===uid&&p.coins&&now-p.at<=500):null;
   const total=coins+(pending?.coins||0);
   const ranked=coins?(c.accumulate?(prior?.coins||0)+coins:Math.max(total,comboTotal)):0;
   const tier=coins?Math.max(0,c.rows.findLastIndex(row=>ranked>=row.min)):0;
   const item=coins?(Object.hasOwn(c.mapping,d.giftId)?c.mapping[d.giftId]:c.rows[tier].effect):c.free.effect;
-  const job={id:randomUUID(),uid,name,avatar,eventId:key||undefined,coins:total,ranked,tier,item,at:now,team,color:c.teams?(team?'#31a8ff':'#ff4d78'):palette[Math.floor(Math.random()*palette.length)]};
-  if(pending)Object.assign(pending,job);else if(coins||!s.queue.some(p=>p.uid===uid&&!p.coins))s.queue.push(job);
+  const job={id:randomUUID(),uid,name,avatar,viewer,eventId:key||undefined,coins:total,ranked,tier,item,at:now,team,color:c.teams?(team?'#31a8ff':'#ff4d78'):palette[Math.floor(Math.random()*palette.length)]};
+  const waitingViewer=!viewer&&!coins?s.queue.find(p=>p.uid===uid&&p.viewer):null;
+  if(waitingViewer)Object.assign(waitingViewer,job,{avatar:job.avatar||waitingViewer.avatar});
+  else if(pending)Object.assign(pending,job);
+  else if(coins||!s.queue.some(p=>p.uid===uid&&!p.coins)){
+    if(!viewer||s.queue.filter(p=>p.viewer).length<24)s.queue.push(job);
+  }
+  if(viewer)return;
   s.log.unshift({name,coins,item,at:now,gift:String(d.giftId||''),count:d.repeatCount??1});
   s.log.length=Math.min(150,s.log.length);
 }
@@ -187,6 +196,22 @@ function smartTick(s,c,gift,comment,now){
  const idle=s.marks.length?(s.marks.length===1?1450:1750):5500;
  if((s.marks.length||c.idlePan)&&now-s.wallTouchedAt>=idle)nextSmartWall(s,c,'community',now);
 }
+function choosePaint(s,c,level,seed){
+ if(!c.directPaint)return {};
+ const recent=s.paintHistory??=[];
+ const palettes=paintPalettes.map(x=>x.id),recipes=paintPools[level];
+ const selection={
+   paintPalette:paintPalettes.some(x=>x.id===c.paintPalette)?c.paintPalette:palettes[seed%palettes.length],
+   paintRecipe:paintRecipes.some(x=>x.id===c.paintRecipe)?c.paintRecipe:recipes[seed%recipes.length]
+ };
+ if(c.paintPalette==='auto'){
+   for(let i=0;i<palettes.length&&recent.some(x=>x.paintPalette===selection.paintPalette&&x.paintRecipe===selection.paintRecipe);i++){
+     selection.paintPalette=palettes[(seed+i+1)%palettes.length];
+   }
+ }
+ s.paintHistory=[...recent,selection].slice(-4);
+ return selection;
+}
 function displayJob(s,c,job,now){
   const donor=job.coins?Object.hasOwn(s.donors,job.uid)?s.donors[job.uid]:null:null;
   const old=c.smartWall?null:job.coins?donor?.mark:s.community.marks.find(m=>m.uid===job.uid);
@@ -201,8 +226,9 @@ function displayJob(s,c,job,now){
   if(c.gunRotate)s.gunCursor=(s.gunCursor??0)+1;
 
   const skin=manifest.skins.includes(setting.skin)?setting.skin:manifest.skins[seed%manifest.skins.length];
-  const common={...job,smartWall:c.smartWall,fullMural:!!(c.smartWall&&job.coins),wallId:c.smartWall?s.activeWallId:undefined,handSide:c.smartWall&&((s.gunCursor??seed)+s.wallNumber)%2===0?'left':'right',wallTheme:c.wallTheme??0,gunSkin,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
-    recoil:setting.recoil,canSpray:c.mixSpray&&level>0&&level<3&&seed%5===0};
+  const paintChoice=choosePaint(s,c,level,seed);
+  const common={...job,smartWall:c.smartWall,directPaint:c.directPaint,...paintChoice,paintIntensity:c.paintIntensity,fullMural:!!(c.smartWall&&job.coins),wallId:c.smartWall?s.activeWallId:undefined,handSide:c.smartWall&&((s.gunCursor??seed)+s.wallNumber)%2===0?'left':'right',wallTheme:c.wallTheme??0,gunSkin,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
+    recoil:setting.recoil,canSpray:paintChoice.paintRecipe==='R18'||c.mixSpray&&level>0&&level<3&&seed%5===0};
   if(job.coins){
     const tier=c.smartWall?job.tier:Math.max(job.tier,donor?.tier??0);
     const wallId=c.smartWall?s.activeWallId:donor?.wallId??randomUUID();
@@ -211,7 +237,7 @@ function displayJob(s,c,job,now){
       x:540+(frame.left-frame.right)/2,y:(WALL_TOP+WALL_BOTTOM+frame.top-frame.bottom)/2};
     mark.wallTier=tier+1;mark.presentationTier=tier+1;
     mark.painting=planPainting(mark,sequence);
-    land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed);
+    land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed,drawStart+mark.sequence.steps.at(-1).impact+(mark.paintRecipe==='R18'?850/c.speed:0));
     Object.assign(mark,{land,end:land+hold});
     Object.defineProperty(s.donors,job.uid,{enumerable:true,configurable:true,writable:true,value:{uid:job.uid,name:job.name,tier,wallId,mark}});
     s.marks=[mark];s.donorUid=job.uid;s.giftRun++;
@@ -220,7 +246,7 @@ function displayJob(s,c,job,now){
     const slot=old?.slot??s.community.marks.length;
     const mark={...common,...(c.smartWall?smartPosition(s,c,slot,now):slotPosition(slot,c)),slot,community:true,size:181};
     mark.painting=planPainting(mark,sequence);
-    land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed);
+    land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed,drawStart+mark.sequence.steps.at(-1).impact+(mark.paintRecipe==='R18'?850/c.speed:0));
     Object.assign(mark,{land,end:land});
     s.community.marks=old?s.community.marks.map(m=>m.uid===job.uid?mark:m):[...s.community.marks,mark];
     if(!old&&s.community.marks.length>=c.max)s.community.fullAt=land;
@@ -246,8 +272,10 @@ export function tick(s,c,now=Date.now()){
   }
   s.scene=null;
   if(s.presentationPaused)return;
-  const gift=s.queue.filter(j=>j.coins&&now-j.at>=500).sort((a,b)=>{const agedA=now-a.at>=45000,agedB=now-b.at>=45000;return agedA||agedB?Number(agedB)-Number(agedA)||a.at-b.at:b.tier-a.tier||a.at-b.at;})[0];
-  const comment=s.queue.find(j=>!j.coins);
+  const nextGift=s.queue.filter(j=>j.coins).sort((a,b)=>b.coins-a.coins||a.at-b.at)[0];
+  const gift=nextGift&&now-nextGift.at>=500?nextGift:null;
+  if(!c.drawViewers)s.queue=s.queue.filter(j=>!j.viewer);
+  const comment=s.queue.find(j=>!j.coins&&!j.viewer)??s.queue.find(j=>j.viewer&&now-j.at>=650);
   if(c.smartWall){smartTick(s,c,gift,comment,now);return;}
   if(s.wallMode==='gift'){
     if(!gift||(comment&&s.giftRun>=3)){

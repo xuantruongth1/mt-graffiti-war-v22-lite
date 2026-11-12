@@ -208,3 +208,6 @@ dialog .actions { justify-content: flex-end; flex-wrap: wrap; }
 @media (max-width: 920px) {
   #close-menu { display: inline-flex; margin: 0 0 12px 4px; }
 }
+
+#paint-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+#paint-swatches span { display: block; width: 26px; height: 18px; border: 1px solid var(--line-strong); border-radius: 5px; }

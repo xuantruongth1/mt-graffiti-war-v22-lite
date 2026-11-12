@@ -27,7 +27,7 @@ try{saved=await readSnapshot(file);}catch(error){
    if(error.code!=='ENOENT')console.error('Không đọc được bản sao phiên:',error.message);
  }
 }
-let config=loadConfig({...saved.config,smartWall:true}),live=saved.live||session(),demo=session(),connector,burst;
+let config=loadConfig({...saved.config,smartWall:true,directPaint:true}),live=saved.live||session(),demo=session(),connector,burst;
 if(saved.live&&!saved.live.sessionId){
  try{await copyFile(file,join(data,'studio.pre-v3.'+Date.now()+'.json'));}catch(error){console.error('Không sao lưu được:',error.message);}
 }
@@ -233,11 +233,11 @@ const server=http.createServer(async(req,res)=>{
     const index=sequence++;
     ingest(demo,demoConfig??config,'chat',{userId:a.scenario==='repeat'?'repeat-user':'scenario-'+index,nickname:testNames[i%testNames.length],comment:'Vẽ tên',msgId:'scenario-'+index});
    }
-  }else if(a.action==='test-chat'){
+  }else if(a.action==='test-chat'||a.action==='test-viewer'){
    const count=Number.isInteger(a.count)&&a.count>=1&&a.count<=7?a.count:1;
    for(let i=0;i<count;i++){
     const index=sequence++;
-    ingest(demo,demoConfig??config,'chat',{userId:'chat-'+index,nickname:testNames[index%testNames.length],comment:'Chào mọi người',msgId:'chat-'+index});
+    ingest(demo,demoConfig??config,a.action==='test-viewer'?'member':'chat',{userId:'chat-'+index,nickname:testNames[index%testNames.length],comment:'Chào mọi người',msgId:'chat-'+index});
    }
   }else if(a.action==='burst'){
    clearInterval(burst);
@@ -287,7 +287,7 @@ const server=http.createServer(async(req,res)=>{
      const y=Number.isFinite(requested.y)?Math.min(limits[1],Math.max(limits[0],requested.y)):fallback.y;
      return [key,{x,y,w,visible:requested.visible!==false}];
    }));
-   const nextConfig={version:3,smartWall:true,idlePan:v.idlePan!==false,cameraPace:['calm','natural','lively'].includes(v.cameraPace)?v.cameraPace:'natural',hud,perfRevision:1,wallTheme:[0,1,2,3,4,5,6,7].includes(Number(v.wallTheme))?Number(v.wallTheme):0,gunRotate:!!v.gunRotate,gunPool:[...new Set(Array.isArray(v.gunPool)?v.gunPool.filter(i=>Number.isInteger(i)&&i>=0&&i<10):[])],scaleTransitions:!!v.scaleTransitions,slots,fullHold:number('fullHold',2500,15000),wipeMs:number('wipeMs',300,1600),peak:number('peak',290,315),speed:number('speed',.5,2),rows,free,mapping,values,minutes,gun:Math.trunc(number('gun',-1,9)),grenade:Math.trunc(number('grenade',-1,9)),gunScale:number('gunScale',.35,1),muzzleX:number('muzzleX',0,941),muzzleY:number('muzzleY',0,1672),fps:Number(v.fps)===60?60:30,renderWidth:[540,720,1080].includes(Number(v.renderWidth))?Number(v.renderWidth):1080,previewWidth:[360,540,720].includes(Number(v.previewWidth))?Number(v.previewWidth):540,topWidth:number('topWidth',220,600),topX:number('topX',0,1080),topY:number('topY',130,1610),showGun:!!v.showGun,sparks:!!v.sparks,shake:!!v.shake,glow:!!v.glow,mixSpray:!!v.mixSpray,accumulate:!!v.accumulate,particles:number('particles',0,100),volume:number('volume',0,100),safe:number('safe',0,10),max:[4,5,6].includes(Number(v.max))?Number(v.max):WALL_CAPACITY,top:!!v.top,flash:!!v.flash,teams:!!v.teams,anonymous:!!v.anonymous};
+   const nextConfig={version:3,smartWall:true,directPaint:true,drawViewers:v.drawViewers!==false,paintPalette:/^P(?:0[1-9]|1[0-6])$/.test(v.paintPalette)?v.paintPalette:'auto',paintRecipe:/^R(?:0[1-9]|1[0-9]|2[0-8])$/.test(v.paintRecipe)?v.paintRecipe:'auto',paintIntensity:['natural','vivid','bold'].includes(v.paintIntensity)?v.paintIntensity:'natural',idlePan:v.idlePan!==false,cameraPace:['calm','natural','lively'].includes(v.cameraPace)?v.cameraPace:'natural',hud,perfRevision:1,wallTheme:[0,1,2,3,4,5,6,7].includes(Number(v.wallTheme))?Number(v.wallTheme):0,gunRotate:!!v.gunRotate,gunPool:[...new Set(Array.isArray(v.gunPool)?v.gunPool.filter(i=>Number.isInteger(i)&&i>=0&&i<10):[])],scaleTransitions:!!v.scaleTransitions,slots,fullHold:number('fullHold',2500,15000),wipeMs:number('wipeMs',300,1600),peak:number('peak',290,315),speed:number('speed',.5,2),rows,free,mapping,values,minutes,gun:Math.trunc(number('gun',-1,9)),grenade:Math.trunc(number('grenade',-1,9)),gunScale:number('gunScale',.35,1),muzzleX:number('muzzleX',0,941),muzzleY:number('muzzleY',0,1672),fps:Number(v.fps)===60?60:30,renderWidth:[540,720,1080].includes(Number(v.renderWidth))?Number(v.renderWidth):1080,previewWidth:[360,540,720].includes(Number(v.previewWidth))?Number(v.previewWidth):540,topWidth:number('topWidth',220,600),topX:number('topX',0,1080),topY:number('topY',130,1610),showGun:!!v.showGun,sparks:!!v.sparks,shake:!!v.shake,glow:!!v.glow,mixSpray:!!v.mixSpray,accumulate:!!v.accumulate,particles:number('particles',0,100),volume:number('volume',0,100),safe:number('safe',0,10),max:[4,5,6].includes(Number(v.max))?Number(v.max):WALL_CAPACITY,top:!!v.top,flash:!!v.flash,teams:!!v.teams,anonymous:!!v.anonymous};
    if(nextConfig.gunRotate&&!nextConfig.gunPool.length)throw Error('Chọn ít nhất một skin để tự động đổi.');
    if(a.action==='preview-settings'){
      if(nextConfig.minutes!==(demoConfig??config).minutes)demo.ends=0;
@@ -305,7 +305,7 @@ const server=http.createServer(async(req,res)=>{
   res.writeHead(200,{'Content-Type':'image/png','X-Content-Type-Options':'nosniff','Cache-Control':'public,max-age=3600'});return res.end(bytes);
  }
  const name=url.pathname==='/'?'index.html':url.pathname.slice(1);
- if(req.method!=='GET'||!/^(?:index\.html|guide\.html|overlay\.html|studio\.js|overlay\.js|stage-layout\.mjs|stage-art\.mjs|courtyard\.jpg|asset-layout\.mjs|scene-plan\.mjs|v2\.mjs|v2\/(?:walls\/wall-[1-7]\.webp|support\/(?:development-qr|support-group)\.png|lite\/[A-Z0-9_a-z]+\.webp|hands\/[a-z_]+\.webp|[a-z_-]+\.json|wall\.png|(?:frames|guns|grenades|fx)\/[A-Z0-9_a-z]+\.png)|vi_tri_avatar_va_ten\.json|(?:01_Binh_Luan|02_1_Xu|03_5_Xu|04_20_Xu|05_100_Xu|06_500_Xu|07_1000_Xu_VIP_PRO)\.png|studio\.css)$/.test(name))return json(res,{error:'Không tìm thấy.'},404);
+ if(req.method!=='GET'||!/^(?:index\.html|guide\.html|overlay\.html|studio\.js|overlay\.js|stage-layout\.mjs|stage-art\.mjs|paint-recipes\.mjs|courtyard\.jpg|asset-layout\.mjs|scene-plan\.mjs|v2\.mjs|v2\/(?:walls\/wall-[1-7]\.webp|support\/(?:development-qr|support-group)\.png|lite\/[A-Z0-9_a-z]+\.webp|hands\/[a-z_]+\.webp|[a-z_-]+\.json|wall\.png|(?:frames|guns|grenades|fx)\/[A-Z0-9_a-z]+\.png)|vi_tri_avatar_va_ten\.json|(?:01_Binh_Luan|02_1_Xu|03_5_Xu|04_20_Xu|05_100_Xu|06_500_Xu|07_1000_Xu_VIP_PRO)\.png|studio\.css)$/.test(name))return json(res,{error:'Không tìm thấy.'},404);
  const contents=await readFile(join(root,name));
  res.writeHead(200,{'Content-Type':mime[name.slice(name.lastIndexOf('.'))],'X-Content-Type-Options':'nosniff','Cache-Control':name.startsWith('v2/lite/')?'public,max-age=86400':'no-cache'});
  res.end(contents);
