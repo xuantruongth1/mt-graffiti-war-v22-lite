@@ -24,7 +24,7 @@ static class GraffitiLauncher
         Process service = null;
         StreamWriter control = null;
         var form = new Form {
-            Text = "MT Graffiti War V3.2", ClientSize = new Size(510, 176),
+            Text = "MT Graffiti War V3.3", ClientSize = new Size(510, 176),
             StartPosition = FormStartPosition.CenterScreen,
             FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false
         };

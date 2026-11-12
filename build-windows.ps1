@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference='Stop'
 $source=$PSScriptRoot
-$package=if($PackagePath){[IO.Path]::GetFullPath($PackagePath)}else{Join-Path (Split-Path $source -Parent) 'MT-Graffiti-V3.2-Portable'}
+$package=if($PackagePath){[IO.Path]::GetFullPath($PackagePath)}else{Join-Path (Split-Path $source -Parent) 'MT-Graffiti-V3.3-Portable'}
 $runtime=Join-Path $package 'runtime'
 $dest=Join-Path $package 'app'
 New-Item -ItemType Directory -Force $runtime,$dest | Out-Null
@@ -39,7 +39,7 @@ try{
  & $NodePath --input-type=module -e "import {DirectLive} from './direct-live.mjs';import {TikTokLiveConnection} from 'tiktok-live-connector';if(typeof DirectLive!=='function'||typeof TikTokLiveConnection!=='function')process.exit(1);"
  if($LASTEXITCODE -ne 0){throw 'Kiểm tra adapter TikTok trong gói portable thất bại.'}
 }finally{Pop-Location}
-$exe=Join-Path $package 'MT Graffiti War V3.2.exe'
+$exe=Join-Path $package 'MT Graffiti War V3.3.exe'
 $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 & $csc /nologo /codepage:65001 /target:winexe "/out:$exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll (Join-Path $source 'Launcher.cs')
 if($LASTEXITCODE -ne 0){throw 'Không biên dịch được launcher Windows.'}

@@ -1,7 +1,7 @@
 # MT Graffiti War V3 · Chạy local trên Windows
 
 - Bản web: chạy **start.bat** bằng Node.js 22 trở lên rồi mở **http://127.0.0.1:3197/**. Trong OBS hoặc TikTok LIVE Studio, dùng link từ nút **Sao chép link LIVE**, nguồn trình duyệt 1080 × 1920.
-- Bản Windows: mở **MT Graffiti War V3.2.exe** trong thư mục **MT-Graffiti-V3.2-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
+- Bản Windows: mở **MT Graffiti War V3.3.exe** trong thư mục **MT-Graffiti-V3.3-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
 - Bản portable kèm adapter và thư viện TikTok. Mở EXE rồi nhập tên TikTok trong Studio. Với mã nguồn chạy trực tiếp, chạy `npm ci --prefix adapter` một lần trước khi kết nối. `GRAFFITI_CONNECTOR` chỉ dùng khi cần chọn adapter khác.
 - Cấu hình tự lưu trong thư mục dữ liệu cục bộ. **Hiệu ứng & bố cục** có nút sao lưu và khôi phục JSON.
 
@@ -59,7 +59,7 @@ Dữ liệu phiên V2.2 được sao lưu vào `studio.pre-v3.*.json` lần đ�
 
 ## V3.1 và chẩn đoán
 
-Chọn độ phân giải LIVE và FPS riêng trong Hiệu ứng & bố cục. Mặc định LIVE 1080 × 1920 ở 30 FPS. Preview giữ nhịp 30 FPS và có độ phân giải riêng. Studio hiển thị mẫu LIVE từ overlay đang vẽ; khi nguồn LIVE đóng hoặc đứng yên, mục này báo chưa có mẫu hoạt động. Nút tải 100 lượt trong 10 giây dùng dữ liệu thử và phát lên màn trình diễn khi bấm trong Studio.
+Chọn độ phân giải LIVE và FPS riêng trong Hiệu ứng & bố cục. Mặc định LIVE 1080 × 1920 ở 30 FPS. Preview giữ nhịp 30 FPS và có độ phân giải riêng. Studio hiển thị mẫu LIVE từ overlay đang vẽ; khi nguồn LIVE đóng hoặc đứng yên, mục này báo chưa có mẫu hoạt động. Nút tải 100 lượt trong 10 giây chỉ phát trong Phòng thử.
 
 Có thể thêm `?clean=1` vào link overlay để ẩn nút âm thanh. `?clean=1&audio=1` yêu cầu bật AudioContext khi tải trang. Âm thanh tự phát phụ thuộc chính sách trình duyệt/OBS; hãy xác minh bằng cảnh thử trước khi dùng.
 
@@ -67,7 +67,7 @@ Có thể thêm `?clean=1` vào link overlay để ẩn nút âm thanh. `?clean=
 
 ## V3.2
 
-Studio tách bản nháp và cấu hình LIVE. Nút Thử trên màn LIVE phát một lượt thử ngay trên nguồn LIVE đang mở, bằng dữ liệu thử riêng. Quà/bình luận thật vẫn được nhận trong lúc thử và tiếp tục trình diễn khi kết thúc. Áp dụng lên LIVE kiểm tra phiên bản để tránh ghi đè từ tab khác. Hoàn tác đưa cấu hình trước đó trở lại bản nháp để bạn xem và áp dụng.
+Studio tách bản nháp và cấu hình LIVE. Nút Thử bản nháp nằm trong Phòng thử và chỉ phát trong DEMO. Nguồn LIVE và OBS tiếp tục dùng dữ liệu thật. Áp dụng lên LIVE kiểm tra phiên bản để tránh ghi đè từ tab khác. Hoàn tác đưa cấu hình trước đó trở lại bản nháp để bạn xem và áp dụng.
 
 Trong Hiệu ứng & bố cục có nền gốc và 7 bối cảnh mới. Bảy nền mới được tạo bằng ImageGen theo yêu cầu ảnh dọc 9:16, tường trống chiếm khoảng 24–68% chiều cao, camera chính diện, không chữ, chừa mặt sân. Các chủ đề là neon xanh, thành cổ, xưởng thép, sân Tết, băng, thiên hà và biển. Ảnh được xuất WebP vào v2/walls.
 
@@ -78,3 +78,7 @@ Link LIVE sao chép từ Studio có tham số renderer=obs để nhận diện n
 Để kiểm logic V3.2 chạy node test-v32.mjs cùng các bài V2 và V3. Để rollback dùng lại thư mục portable trước. Sao lưu studio.json và studio.json.bak khi cả hai launcher đã tắt.
 
 Kiểm tra giao diện với Playwright bằng node test-ui-v32.mjs <thư_mục_ảnh>. Dùng các biến GRAFFITI_CHROME và GRAFFITI_PLAYWRIGHT như bài benchmark.
+
+## V3.3 Smart Wall
+
+Mỗi bình luận bắn hai phát và nhóm từ một đến sáu tranh theo hàng chờ. Khi có quà, camera lướt từ tường cộng đồng sang tường quà trống. Bình luận tiếp theo mở tường mới. Dùng Tường & Camera để chọn nhịp và bật/tắt tự lướt khi rảnh. Kiểm tra luồng tường bằng `node test-v33.mjs`.

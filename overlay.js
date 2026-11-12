@@ -196,9 +196,10 @@ function frameTile(url,image,g){
 }
 function commentTag(m,progress,opacity){
  const slot=wallRules.communityWall.slots[m.slot],p=clamp(progress);
- const width=slot.finalPaintBoundingBoxPx.width*wallScale,h=slot.finalPaintBoundingBoxPx.height*wallScale;
+ const scale=m.artScale??1;
+ const width=slot.finalPaintBoundingBoxPx.width*wallScale*scale,h=slot.finalPaintBoundingBoxPx.height*wallScale*scale;
  const splash=asset(fxAsset(hash(m.id)%7,hash(m.uid)%4)),tile=paintTile(m,width,h);
- const spread=.66+.34*p,r=slot.avatarDiameterPx*wallScale/2;
+ const spread=.66+.34*p,r=slot.avatarDiameterPx*wallScale*scale/2;
  ctx.save();ctx.globalAlpha=opacity;ctx.translate(m.x,m.y);
  ctx.drawImage(tile,-tile.width*spread/2,-tile.height*.43*spread,tile.width*spread,tile.height*spread);
  if(splash){ctx.save();ctx.rotate((hash(m.uid)%31-15)*Math.PI/180);ctx.drawImage(splash,-width*spread/2,-h*spread/2,width*spread,h*spread);ctx.restore();}
@@ -209,7 +210,7 @@ function commentTag(m,progress,opacity){
  }
  const letters=clamp((p-.72)/.28);
  if(letters>0){
-   const name=label(m),max=slot.nicknameMaxWidthPx*wallScale;
+   const name=label(m),max=slot.nicknameMaxWidthPx*wallScale*scale;
    const y=m.nameY-m.y;
    ctx.globalAlpha=opacity*letters;
    box(-max/2-3,y-18,max+6,37,9,'#1d1424e9');
@@ -252,10 +253,38 @@ function coverage(m,now){
  ctx.clip();
  return art;
 }
+function muralTile(m,art){
+ const key='mural:'+m.id;
+ const hit=cached(paintCache,key);if(hit)return hit;
+ const tile=document.createElement('canvas');tile.width=art.width;tile.height=art.height;
+ const g=tile.getContext('2d'),seed=hash(m.id),mode=seed%5,colors=palette[baseLevel(m)];
+ const w=tile.width,h=tile.height;
+ g.fillStyle='#151127';g.globalAlpha=.84;g.fillRect(0,0,w,h);
+ for(let i=0;i<9;i++){
+   const x=(i%3+.5)*w/3+(rand(seed+i)-.5)*94;
+   const y=(Math.floor(i/3)+.5)*h/3+(rand(seed+i+21)-.5)*68;
+   g.globalAlpha=.55+rand(seed+i+31)*.3;
+   paintStamp(g,x,y,133+rand(seed+i+9)*76,[colors[i%3],colors[(i+1)%3],colors[(i+2)%3]],seed+i*131,2);
+ }
+ g.globalAlpha=.86;g.lineWidth=9;g.lineJoin='round';
+ for(let side=0;side<2;side++){
+   g.save();g.translate(side?w*.80:w*.20,h*.49);g.scale(side?-1:1,1);
+   g.strokeStyle='#1b1633';g.fillStyle=colors[(mode+side+1)%3];
+   for(let i=0;i<4;i++){
+     const a=i*Math.PI/4+mode*.24;
+     g.save();g.rotate(a);g.beginPath();
+     g.moveTo(-24,-20);g.lineTo(34,-80-mode*7);g.lineTo(106,-54+i*9);
+     g.lineTo(53,-8);g.lineTo(84,39);g.lineTo(-33,32);
+     g.closePath();g.fill();g.stroke();g.restore();
+   }
+   g.restore();
+ }
+ paintCache.set(key,tile);trimPixels(paintCache,32*1024*1024,24);return tile;
+}
 function tag(m,now,opacity){
  const elapsed=now-m.drawStart;
  if(m.community){
-   const shot=plan(m).steps[0];
+   const shot=plan(m).steps.at(-1);
    if(elapsed>=shot.impact)commentTag(m,now>=m.land?1:clamp((elapsed-shot.impact)/Math.max(1,m.land-m.drawStart-shot.impact)),opacity);
    return;
  }
@@ -264,6 +293,11 @@ function tag(m,now,opacity){
  const art=recipe(m),finished=now>=m.land;
  if(!finished&&elapsed<art.steps[0].impact)return;
  ctx.save();ctx.translate(m.x,m.y);ctx.globalAlpha=opacity;
+ if(m.fullMural){
+   ctx.save();coverage(m,now);
+   ctx.drawImage(muralTile(m,art),art.left-m.x,art.top-m.y);
+   ctx.restore();
+ }
  const {x,y,rx,ry}=g.portrait,face=finished?1:clamp((elapsed-art.avatarAt)/220);
  if(face){ctx.save();ctx.globalAlpha=opacity*face;avatar(m,x,y,rx,ry);ctx.restore();}
  if(image){
@@ -282,10 +316,22 @@ function tag(m,now,opacity){
  }
  ctx.restore();
 }
-function backgroundAndFloor(now){
+function panBackground(wall,offset,direction){
+ const iw=wall.naturalWidth,ih=wall.naturalHeight;
+ for(const [y,h,rate] of [[0,467,.36],[467,833,1],[1300,620,1.12]]){
+   const distance=rate===1?offset:offset+Math.sin(offset*Math.PI/1080)*(rate-1)*360;
+   const shift=((distance)%1080+1080)%1080;
+   const x=direction>0?-shift:shift;
+   for(const start of [x-1080,x,x+1080])ctx.drawImage(wall,0,y/1920*ih,iw,h/1920*ih,start,y,1080,h);
+ }
+}
+function backgroundAndFloor(now,move,p){
  const theme=state?.scene?.wallTheme??state?.wallTheme??0;
  const wall=theme?asset(wallAsset(theme,preview))||background:background;
- if(wall.complete&&wall.naturalWidth)ctx.drawImage(wall,0,0,1080,1920);
+ if(wall.complete&&wall.naturalWidth){
+   if(move?.kind==='smartPan')panBackground(wall,p*1080,move.direction);
+   else ctx.drawImage(wall,0,0,1080,1920);
+ }
  else {ctx.fillStyle='#4e4544';ctx.fillRect(0,0,1080,1920);}
  for(const s of floor){
    if(now>=s.until||s.scene!==sceneKey()||state?.wallMove&&now<state.wallMove.end)continue;
@@ -334,7 +380,9 @@ function weapon(m,now,render,firingStep){
  const px=shift+anchor.pivot[0]*unit,py=top+anchor.pivot[1]*unit;
  const localX=(anchor.muzzle[0]+c.muzzleX-225-anchor.pivot[0])*unit;
  const localY=(anchor.muzzle[1]+c.muzzleY-1060-anchor.pivot[1])*unit;
- const target=next?.target;
+ const left=m?.handSide==='left';
+ const target=next?.target&&(left?[1080-next.target[0],next.target[1]]:next.target);
+ if(render&&left){ctx.save();ctx.translate(1080,0);ctx.scale(-1,1);}
  const aim=target?Math.atan2(target[1]-(py+localY),target[0]-(px+localX))-anchor.axis:0;
  const angle=Math.max(-anchor.limit,Math.min(anchor.limit,aim));
  const ox=px+localX*Math.cos(angle)-localY*Math.sin(angle)+recoil*.52;
@@ -356,7 +404,8 @@ function weapon(m,now,render,firingStep){
      ctx.restore();
    }
  }
- return c.showGun?[ox,oy]:[220,1710];
+ if(render&&left)ctx.restore();
+ return c.showGun?[left?1080-ox:ox,oy]:[left?860:220,1710];
 }
 function sprayCan(m,now){
  const elapsed=now-m.drawStart,last=plan(m).steps.at(-1)?.impact??0,r=faceRadius(m.coins,m.tier,m.size);
@@ -390,7 +439,7 @@ function spray(m,now){
        if(state.config.glow&&dt<spec.muzzleFlashMs)disk(ctx,ox,oy,13*(1-dt/spec.muzzleFlashMs),colors[1]);
      }else{
        const icon=asset(grenadeAsset(state.config.grenade>=0?state.config.grenade:(seed+i+level)%10));
-       const ax=mix(330,x,p),ay=mix(1630,y,p)-390*4*p*(1-p),size=(96+level*5)*(1-.48*p);
+       const ax=mix(m.handSide==='left'?750:330,x,p),ay=mix(1630,y,p)-390*4*p*(1-p),size=(96+level*5)*(1-.48*p);
        ctx.save();ctx.translate(ax,ay);ctx.rotate(p*Math.PI*4);
        if(icon)ctx.drawImage(icon,-size/2,-size/2,size,size);
        else disk(ctx,0,0,size/3,colors[0]);
@@ -484,11 +533,16 @@ function draw(time){
  sampleRender(time,moving,width,height);
  dirty=false;wasMoving=moving;
  nextIdle=floor.some(s=>now<s.until+250)?time+250:Infinity;
- backgroundAndFloor(now);
- if(move&&now<move.end){
-   const p=clamp((now-move.start)/(move.fadeEnd-move.start));
+ const transition=move&&now<move.end?move:null;
+ const phase=transition?clamp((now-transition.start)/(transition.fadeEnd-transition.start)):0;
+ const pan=phase*phase*(3-2*phase);
+ backgroundAndFloor(now,transition,pan);
+ if(transition){
+   const p=phase;
    if(p<.28)cue('wall-'+move.start,'wall',0);
-   if(move.kind==='communityFullToBlank'){
+   if(move.kind==='smartPan'){
+     ctx.save();ctx.translate(-move.direction*pan*1080,0);paintLayer(move.oldMarks,now);ctx.restore();
+   }else if(move.kind==='communityFullToBlank'){
      ctx.save();ctx.beginPath();ctx.rect(1080*p,WALL_TOP,1080*(1-p),WALL_BOTTOM-WALL_TOP);ctx.clip();
      paintLayer(move.oldMarks,now,1);ctx.restore();
    }else{
@@ -543,7 +597,7 @@ function draw(time){
    text(note,banner.x+banner.w/2,banner.y+banner.h/2,Math.min(27,banner.w/Math.max(16,note.length*.6)),'#fff2f8');
    if(editingBox==='note')resizeHandle(banner);
  }
- if(source==='demo'||state.showTest)text('ĐANG TRÌNH DIỄN THỬ',540,1890,20,'#ffe09b');
+ if(source==='demo')text('DEMO — KHÔNG PHẢI LIVE',540,1890,20,'#ffe09b');
  if(moving)drawTimes.push(performance.now()-renderStarted);
 }
 requestAnimationFrame(draw);

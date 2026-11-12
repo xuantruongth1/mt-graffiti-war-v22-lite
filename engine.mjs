@@ -11,7 +11,7 @@ export const freeEffects=['Nét tên','Nét tên neon','Bụi màu'];
 export const items=[...names,'Sóng cầu vồng','Cánh phượng','Tẩy sơn','Khiên màu','Vương miện','Tia sét','Sao vàng','Cầu vồng','Portal','Tim ma thuật'];
 const timingDefaults=(i)=>({life:tierSpecs[i].holdSeconds,seconds:tierSpecs[i].durationMs/1000,shots:shotCounts[i],gap:shotGaps[i],bombs:tierSpecs[i].grenades,flight:tierSpecs[i].shotFlightMs,bombFlight:tierSpecs[i].grenadeFlightMs,recoil:tierSpecs[i].weaponAnimation?.recoilDistancePx??8,skin:'auto'});
 export const defaults={
-  version:3,perfRevision:1,speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
+  version:3,perfRevision:1,smartWall:false,idlePan:true,cameraPace:"natural",speed:1,scaleTransitions:false,fullHold:2500,wipeMs:650,slots:rules.slots.map(s=>({...s.avatarCenterPx})),peak:315,particles:35,volume:35,safe:3,top:true,flash:false,anonymous:false,teams:false,minutes:0,max:WALL_CAPACITY,
   gun:-1,grenade:-1,gunScale:.71,muzzleX:225,muzzleY:1060,showGun:true,hud:defaultHud,wallTheme:0,gunRotate:false,gunPool:[0,1,2,3,4,5,6,7,8,9],fps:30,renderWidth:1080,previewWidth:540,topX:753,topY:1478,topWidth:292,sparks:true,glow:true,shake:false,mixSpray:false,accumulate:false,values:{},
   free:{...timingDefaults(0),effect:'Nét tên'},
   rows:tierSpecs.slice(1).map((spec,i)=>({...timingDefaults(i+1),min:spec.minimum,size:[230,300,375,450,635,850][i],effect:names[i],hold:donorHolds[i]})),
@@ -139,12 +139,60 @@ function restoreCommunity(s,c,now){
   if(s.community.pausedAt!==null&&s.community.fullAt)s.community.fullAt+=s.wallMove.end-s.community.pausedAt;
   s.community.pausedAt=null;s.wallMode='community';s.donorUid=null;s.giftRun=-1;
 }
+const layouts={
+ 1:[[540,875,2.05]],
+ 2:[[300,780,1.28],[780,998,1.28]],
+ 3:[[225,795,1.06],[540,1000,1.06],[855,775,1.06]],
+ 4:[[277,750,1.02],[797,770,1.02],[327,1030,1.02],[747,1055,1.02]],
+ 5:[[210,749,.95],[545,730,.95],[873,760,.95],[350,1040,1],[730,1020,1]],
+ 6:[[195,743,.92],[540,725,.92],[885,750,.92],[215,1045,.92],[560,1032,.92],[890,1050,.92]]
+};
+function smartPosition(s,c,slot,now){
+ if(!s.community.capacity)s.community.capacity=Math.min(c.max,Math.max(1,s.queue.filter(x=>!x.coins&&x.at<=now).length));
+ const [x,y,artScale]=layouts[s.community.capacity][slot];
+ const mirror=s.wallNumber%2===0;
+ return {x:mirror?1080-x:x,y,nameX:mirror?1080-x:x,nameY:y+122*artScale,artScale};
+}
+function nextSmartWall(s,c,mode,now){
+ const old=s.marks,fromId=s.activeWallId??(s.sessionId+':'+s.wallNumber);
+ if(old.length){
+   const library=s.wallMode==='gift'?(s.giftPages??=[]):s.pages;
+   library.unshift({number:s.wallNumber,wallId:fromId,marks:old});
+   library.length=Math.min(library.length,rules.newWallPolicy.preserveLastPages);
+ }
+ const direction=s.wallNumber%4<2?1:-1;
+ s.wallNumber++;s.activeWallId=s.sessionId+':'+s.wallNumber;
+ const pace={calm:1050,natural:840,lively:690}[c.cameraPace]??840;
+ const duration=pace+(s.wallNumber%5-2)*25;
+ s.wallMove={kind:'smartPan',direction,fromId,wallId:s.activeWallId,oldMarks:old,start:now,fadeEnd:now+duration,end:now+duration+180};
+ s.marks=[];s.community={marks:[],fullAt:0,pausedAt:null};s.wallMode=mode;s.donorUid=null;s.wallTouchedAt=s.wallMove.end;
+}
+function smartTick(s,c,gift,comment,now){
+ s.activeWallId??=s.sessionId+':'+s.wallNumber;
+ s.wallTouchedAt??=now;
+ if(s.wallMode==='gift'){
+   if(!s.marks.length&&gift){displayJob(s,c,gift,now);return;}
+   if(!s.marks.length){nextSmartWall(s,c,'community',now);return;}
+   if(gift&&!(comment&&s.giftRun>=3)){nextSmartWall(s,c,'gift',now);return;}
+   nextSmartWall(s,c,'community',now);s.giftRun=comment?-1:0;return;
+ }
+ if(gift&&!(comment&&s.giftRun<0)){nextSmartWall(s,c,'gift',now);return;}
+ if(comment){
+   if(s.marks.some(m=>m.uid===comment.uid)){s.queue.splice(s.queue.indexOf(comment),1);return;}
+   if(s.marks.length>=(s.community.capacity??c.max)){nextSmartWall(s,c,'community',now);return;}
+   if(!s.marks.length&&now-comment.at<260)return;
+   if(s.giftRun<0)s.giftRun=0;
+   displayJob(s,c,comment,now);return;
+ }
+ const idle=s.marks.length?(s.marks.length===1?1450:1750):5500;
+ if((s.marks.length||c.idlePan)&&now-s.wallTouchedAt>=idle)nextSmartWall(s,c,'community',now);
+}
 function displayJob(s,c,job,now){
   const donor=job.coins?Object.hasOwn(s.donors,job.uid)?s.donors[job.uid]:null:null;
-  const old=job.coins?donor?.mark:s.community.marks.find(m=>m.uid===job.uid);
+  const old=c.smartWall?null:job.coins?donor?.mark:s.community.marks.find(m=>m.uid===job.uid);
   const level=job.coins?job.tier+1:0,setting=job.coins?c.rows[job.tier]:c.free;
   const seed=Array.from(job.id).reduce((sum,x)=>sum+x.charCodeAt(0),0);
-  const sequence=timeline(level,setting,c.speed);
+  const sequence=timeline(level,c.smartWall&&!job.coins?{...setting,shots:2,gap:195,flight:175}:setting,c.speed);
   const start=now,drawStart=now+(job.coins?220:90)/c.speed;
   let land=drawStart+sequence.duration;
   const hold=job.coins?(setting.hold??donorHolds[job.tier])*1000:0;
@@ -153,12 +201,12 @@ function displayJob(s,c,job,now){
   if(c.gunRotate)s.gunCursor=(s.gunCursor??0)+1;
 
   const skin=manifest.skins.includes(setting.skin)?setting.skin:manifest.skins[seed%manifest.skins.length];
-  const common={...job,wallTheme:c.wallTheme??0,gunSkin,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
+  const common={...job,smartWall:c.smartWall,fullMural:!!(c.smartWall&&job.coins),wallId:c.smartWall?s.activeWallId:undefined,handSide:c.smartWall&&((s.gunCursor??seed)+s.wallNumber)%2===0?'left':'right',wallTheme:c.wallTheme??0,gunSkin,sessionId:s.sessionId,sceneId:job.id,eventTier:level,timelineVersion:TIMELINE_VERSION,start,drawStart,skin,sequence,until:Number.MAX_SAFE_INTEGER,avatar:job.avatar||old?.avatar||'',
     recoil:setting.recoil,canSpray:c.mixSpray&&level>0&&level<3&&seed%5===0};
   if(job.coins){
-    const tier=Math.max(job.tier,donor?.tier??0);
-    const wallId=donor?.wallId??randomUUID();
-    const size=c.rows[tier].size,frame=extent(job.coins,tier,size);
+    const tier=c.smartWall?job.tier:Math.max(job.tier,donor?.tier??0);
+    const wallId=c.smartWall?s.activeWallId:donor?.wallId??randomUUID();
+    const size=c.smartWall?Math.min(850,Math.round(c.rows[tier].size*1.45)):c.rows[tier].size,frame=extent(job.coins,tier,size);
     const mark={...common,tier,size,wallId,skin:tier>job.tier?old.skin:skin,
       x:540+(frame.left-frame.right)/2,y:(WALL_TOP+WALL_BOTTOM+frame.top-frame.bottom)/2};
     mark.wallTier=tier+1;mark.presentationTier=tier+1;
@@ -170,7 +218,7 @@ function displayJob(s,c,job,now){
     s.scene={...common,land,end:mark.end,wallTier:mark.wallTier,presentationTier:mark.presentationTier,painting:mark.painting,x:mark.x,y:mark.y,size,wallId,art:mark,before:old??null};
   }else{
     const slot=old?.slot??s.community.marks.length;
-    const mark={...common,...slotPosition(slot,c),slot,community:true,size:181};
+    const mark={...common,...(c.smartWall?smartPosition(s,c,slot,now):slotPosition(slot,c)),slot,community:true,size:181};
     mark.painting=planPainting(mark,sequence);
     land=Math.max(land,drawStart+mark.painting.nameAt+210/c.speed);
     Object.assign(mark,{land,end:land});
@@ -178,6 +226,7 @@ function displayJob(s,c,job,now){
     if(!old&&s.community.marks.length>=c.max)s.community.fullAt=land;
     s.marks=s.community.marks;s.scene={...mark,before:old??null};
   }
+  s.wallTouchedAt=s.scene.land;
   s.queue.splice(s.queue.indexOf(job),1);
 }
 export function tick(s,c,now=Date.now()){
@@ -199,6 +248,7 @@ export function tick(s,c,now=Date.now()){
   if(s.presentationPaused)return;
   const gift=s.queue.filter(j=>j.coins&&now-j.at>=500).sort((a,b)=>{const agedA=now-a.at>=45000,agedB=now-b.at>=45000;return agedA||agedB?Number(agedB)-Number(agedA)||a.at-b.at:b.tier-a.tier||a.at-b.at;})[0];
   const comment=s.queue.find(j=>!j.coins);
+  if(c.smartWall){smartTick(s,c,gift,comment,now);return;}
   if(s.wallMode==='gift'){
     if(!gift||(comment&&s.giftRun>=3)){
       restoreCommunity(s,c,now);return;

@@ -27,7 +27,7 @@ try{saved=await readSnapshot(file);}catch(error){
    if(error.code!=='ENOENT')console.error('Không đọc được bản sao phiên:',error.message);
  }
 }
-let config=loadConfig(saved.config),live=saved.live||session(),demo=session(),connector,burst;
+let config=loadConfig({...saved.config,smartWall:true}),live=saved.live||session(),demo=session(),connector,burst;
 if(saved.live&&!saved.live.sessionId){
  try{await copyFile(file,join(data,'studio.pre-v3.'+Date.now()+'.json'));}catch(error){console.error('Không sao lưu được:',error.message);}
 }
@@ -44,17 +44,12 @@ const localCatalog=join(root,'adapter','catalog.json');
 const catalogPath=process.env.GRAFFITI_CATALOG||localCatalog;
 let catalog=[];
 try{const raw=JSON.parse(await readFile(catalogPath,'utf8'));catalog=Array.isArray(raw)?raw:raw.icons||raw.gifts||raw.items||[];}catch{}
-const presentationActions=new Set(['test','test-chat','test-combo','test-scenario','burst']);
-let showTest=false,testUntil=0;
 function state(which){
  const s=which==='demo'?demo:live;
- return {showTest,config:which==='demo'?(demoConfig??config):config,configRevision,paused:!!s.presentationPaused,wallTheme:(which==='demo'?(demoConfig??config):config).wallTheme,liveMetrics:[...rendererSamples.values()].filter(sample=>Date.now()-sample.at<10000),serverTime:Date.now(),connection,marks:s.marks,scene:s.scene,pending:(s.pending??[]).map(({gift,uid,at,count,reason})=>({gift,uid,at,count,reason})),wallMode:s.wallMode,queueWaitMs:s.scene?Math.max(0,s.scene.start-s.scene.at):null,communityCount:s.community.marks.length,giftQueued:s.queue.filter(x=>x.coins).length,top:Object.values(s.scores).filter(x=>x.coins).sort((a,b)=>b.coins-a.coins).slice(0,5),log:s.log,queue:s.queue.length,wallNumber:s.wallNumber??1,wallMove:s.wallMove??null,round:s.round,ends:s.ends,winners:s.winners,winningTeam:s.winningTeam,teams:s.teams,status};
+ return {activeWallId:s.activeWallId,config:which==='demo'?(demoConfig??config):config,configRevision,paused:!!s.presentationPaused,wallTheme:(which==='demo'?(demoConfig??config):config).wallTheme,liveMetrics:[...rendererSamples.values()].filter(sample=>Date.now()-sample.at<10000),serverTime:Date.now(),connection,marks:s.marks,scene:s.scene,pending:(s.pending??[]).map(({gift,uid,at,count,reason})=>({gift,uid,at,count,reason})),wallMode:s.wallMode,queueWaitMs:s.scene?Math.max(0,s.scene.start-s.scene.at):null,communityCount:s.community.marks.length,giftQueued:s.queue.filter(x=>x.coins).length,top:Object.values(s.scores).filter(x=>x.coins).sort((a,b)=>b.coins-a.coins).slice(0,5),log:s.log,queue:s.queue.length,wallNumber:s.wallNumber??1,wallMove:s.wallMove??null,round:s.round,ends:s.ends,winners:s.winners,winningTeam:s.winningTeam,teams:s.teams,status};
 }
 function viewState(which,view){
- const presenting=view==='overlay'&&which==='live'&&showTest;
- const snapshot=state(presenting?'demo':which);
- if(view==='overlay')snapshot.showTest=presenting;
- if(presenting)snapshot.config={...snapshot.config,fps:config.fps,renderWidth:config.renderWidth};
+ const snapshot=state(which);
  if(view==='studio'){
    delete snapshot.marks;delete snapshot.scene;delete snapshot.wallMove;
  }else if(view==='overlay'){
@@ -97,20 +92,16 @@ const revision=s=>JSON.stringify([s.scene?.id,s.marks.length,s.round,s.wallMove?
 let liveRevision=revision(live),demoRevision=revision(demo);
 setInterval(()=>{
  const now=Date.now();
- const canShowTest=showTest||testUntil>0&&(!live.scene||live.scene.end<=now)&&(!live.wallMove||live.wallMove.end<=now);
- if(!canShowTest)tick(live,config,now);
- if(!testUntil||canShowTest)tick(demo,demoConfig??config,now);
- const previous=showTest;
- showTest=canShowTest&&(demo.queue.length>0||!!demo.scene||!!demo.wallMove||!!demoScenario||now<testUntil);
- if(canShowTest&&!showTest)testUntil=0;
+ tick(live,config,now);
+ tick(demo,demoConfig??config,now);
  if(demoScenario&&demo.community.marks.length===3&&!demo.scene&&demo.wallMode==='community'){
    const type=demoScenario;demoScenario=null;
    if(type==='donors'){testGift(100,101);testGift(500,102);}
-   else if(type==='upgrade'){if(testUntil)testUntil=Math.max(testUntil,now+6500);testGift(1,101);const token=scenarioGeneration;setTimeout(()=>{if(token===scenarioGeneration)testGift(100,101);},5500);}
+   else if(type==='upgrade'){testGift(1,101);const token=scenarioGeneration;setTimeout(()=>{if(token===scenarioGeneration)testGift(100,101);},5500);}
    else testGift(20,101);
  }
  const nextLive=revision(live),nextDemo=revision(demo);
- if(previous!==showTest||nextLive!==liveRevision||nextDemo!==demoRevision){
+ if(nextLive!==liveRevision||nextDemo!==demoRevision){
    if(nextLive!==liveRevision)dirty=true;
    liveRevision=nextLive;demoRevision=nextDemo;broadcast();
  }
@@ -139,8 +130,13 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='GET'&&url.pathname==='/api/gallery'){
   const data=which==='demo'?demo:live;
   const kind=url.searchParams.get('kind'),id=url.searchParams.get('id');
+  const donorWalls=new Map(Object.values(data.donors).map(entry=>[entry.wallId,entry]));
+  for(const archived of data.giftPages??[]){
+   const mark=archived.marks[0];
+   if(mark&&!donorWalls.has(archived.wallId))donorWalls.set(archived.wallId,{...archived,uid:mark.uid,name:mark.name,tier:mark.tier,mark});
+  }
   if(kind==='donor'||kind==='page'){
-   const entry=kind==='donor'?Object.values(data.donors).find(x=>x.wallId===id):data.pages.find(x=>String(x.number)===id);
+   const entry=kind==='donor'?donorWalls.get(id):data.pages.find(x=>String(x.number)===id);
    if(!entry)return json(res,{error:'Không còn tường này.'},404);
    const now=Date.now(),mark=entry.mark;
    const result={...state(which),wallMode:kind==='donor'?'gift':'community',wallNumber:entry.number??data.wallNumber,
@@ -154,7 +150,7 @@ const server=http.createServer(async(req,res)=>{
   }
   return json(res,{
     pages:data.pages.map(p=>({number:p.number,count:p.marks.length})),
-    donors:Object.values(data.donors).map(({uid,name,wallId,tier})=>({uid,name:config.anonymous?'Họa sĩ':name,wallId,tier,coins:Object.hasOwn(data.scores,uid)?data.scores[uid].coins:0})).sort((a,b)=>b.coins-a.coins)
+    donors:[...donorWalls.values()].map(({uid,name,wallId,tier})=>({uid,name:config.anonymous?'Họa sĩ':name,wallId,tier,coins:Object.hasOwn(data.scores,uid)?data.scores[uid].coins:0})).sort((a,b)=>b.coins-a.coins)
   });
  }
  if(req.method==='GET'&&url.pathname==='/api/catalog')return json(res,catalog);
@@ -247,7 +243,7 @@ const server=http.createServer(async(req,res)=>{
    clearInterval(burst);
    const rate=[1,5,10,20].includes(Number(a.rate))?Number(a.rate):100/30;
    let n=0;burst=setInterval(()=>{testGift((demoConfig??config).rows[n%config.rows.length].min);if(++n>=100)clearInterval(burst);},1000/rate);
-  }else if(a.action==='clear-demo'){clearInterval(burst);scenarioGeneration++;demoScenario=null;demo=session();showTest=false;testUntil=0;}
+  }else if(a.action==='clear-demo'){clearInterval(burst);scenarioGeneration++;demoScenario=null;demo=session();}
   else if(a.action==='reset'){live=session();dirty=true;}
   else if(a.action==='round'){(a.source==='demo'?demo:live).ends=Date.now();if(a.source!=='demo')dirty=true;}
   else if(['pause-presentation','resume-presentation','skip-current-visual','skip-transition'].includes(a.action)){
@@ -291,7 +287,7 @@ const server=http.createServer(async(req,res)=>{
      const y=Number.isFinite(requested.y)?Math.min(limits[1],Math.max(limits[0],requested.y)):fallback.y;
      return [key,{x,y,w,visible:requested.visible!==false}];
    }));
-   const nextConfig={version:3,hud,perfRevision:1,wallTheme:[0,1,2,3,4,5,6,7].includes(Number(v.wallTheme))?Number(v.wallTheme):0,gunRotate:!!v.gunRotate,gunPool:[...new Set(Array.isArray(v.gunPool)?v.gunPool.filter(i=>Number.isInteger(i)&&i>=0&&i<10):[])],scaleTransitions:!!v.scaleTransitions,slots,fullHold:number('fullHold',2500,15000),wipeMs:number('wipeMs',300,1600),peak:number('peak',290,315),speed:number('speed',.5,2),rows,free,mapping,values,minutes,gun:Math.trunc(number('gun',-1,9)),grenade:Math.trunc(number('grenade',-1,9)),gunScale:number('gunScale',.35,1),muzzleX:number('muzzleX',0,941),muzzleY:number('muzzleY',0,1672),fps:Number(v.fps)===60?60:30,renderWidth:[540,720,1080].includes(Number(v.renderWidth))?Number(v.renderWidth):1080,previewWidth:[360,540,720].includes(Number(v.previewWidth))?Number(v.previewWidth):540,topWidth:number('topWidth',220,600),topX:number('topX',0,1080),topY:number('topY',130,1610),showGun:!!v.showGun,sparks:!!v.sparks,shake:!!v.shake,glow:!!v.glow,mixSpray:!!v.mixSpray,accumulate:!!v.accumulate,particles:number('particles',0,100),volume:number('volume',0,100),safe:number('safe',0,10),max:[4,5,6].includes(Number(v.max))?Number(v.max):WALL_CAPACITY,top:!!v.top,flash:!!v.flash,teams:!!v.teams,anonymous:!!v.anonymous};
+   const nextConfig={version:3,smartWall:true,idlePan:v.idlePan!==false,cameraPace:['calm','natural','lively'].includes(v.cameraPace)?v.cameraPace:'natural',hud,perfRevision:1,wallTheme:[0,1,2,3,4,5,6,7].includes(Number(v.wallTheme))?Number(v.wallTheme):0,gunRotate:!!v.gunRotate,gunPool:[...new Set(Array.isArray(v.gunPool)?v.gunPool.filter(i=>Number.isInteger(i)&&i>=0&&i<10):[])],scaleTransitions:!!v.scaleTransitions,slots,fullHold:number('fullHold',2500,15000),wipeMs:number('wipeMs',300,1600),peak:number('peak',290,315),speed:number('speed',.5,2),rows,free,mapping,values,minutes,gun:Math.trunc(number('gun',-1,9)),grenade:Math.trunc(number('grenade',-1,9)),gunScale:number('gunScale',.35,1),muzzleX:number('muzzleX',0,941),muzzleY:number('muzzleY',0,1672),fps:Number(v.fps)===60?60:30,renderWidth:[540,720,1080].includes(Number(v.renderWidth))?Number(v.renderWidth):1080,previewWidth:[360,540,720].includes(Number(v.previewWidth))?Number(v.previewWidth):540,topWidth:number('topWidth',220,600),topX:number('topX',0,1080),topY:number('topY',130,1610),showGun:!!v.showGun,sparks:!!v.sparks,shake:!!v.shake,glow:!!v.glow,mixSpray:!!v.mixSpray,accumulate:!!v.accumulate,particles:number('particles',0,100),volume:number('volume',0,100),safe:number('safe',0,10),max:[4,5,6].includes(Number(v.max))?Number(v.max):WALL_CAPACITY,top:!!v.top,flash:!!v.flash,teams:!!v.teams,anonymous:!!v.anonymous};
    if(nextConfig.gunRotate&&!nextConfig.gunPool.length)throw Error('Chọn ít nhất một skin để tự động đổi.');
    if(a.action==='preview-settings'){
      if(nextConfig.minutes!==(demoConfig??config).minutes)demo.ends=0;
@@ -301,10 +297,6 @@ const server=http.createServer(async(req,res)=>{
      config=nextConfig;configRevision++;dirty=true;
    }
   }else throw Error('Lệnh không hợp lệ.');
-  if(a.showOnLive===true&&presentationActions.has(a.action)){
-    const hold=a.action==='burst'?Math.ceil(100000/([1,5,10,20].includes(Number(a.rate))?Number(a.rate):100/30))+1000:2400;
-    testUntil=Math.max(testUntil,Date.now()+hold);
-  }
   broadcast();save();return json(res,{ok:true,revision:configRevision});
  }
  const icon=url.pathname.match(/^\/gift-icon\/([a-zA-Z0-9_-]+\.png)$/);
