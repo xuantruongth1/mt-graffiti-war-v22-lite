@@ -1,0 +1,93 @@
+{
+  "coordinates": {
+    "wallCanvas": [
+      941,
+      1672
+    ],
+    "safeWallArea": [
+      100,
+      480,
+      842,
+      1072
+    ],
+    "avoid": [
+      {
+        "name": "sky",
+        "rect": [
+          0,
+          0,
+          941,
+          399
+        ]
+      },
+      {
+        "name": "floor",
+        "rect": [
+          0,
+          1135,
+          941,
+          1672
+        ]
+      },
+      {
+        "name": "left_wall_light",
+        "rect": [
+          0,
+          440,
+          200,
+          670
+        ]
+      },
+      {
+        "name": "right_wall_light",
+        "rect": [
+          746,
+          440,
+          941,
+          670
+        ]
+      }
+    ],
+    "avatarCenterDefault": [
+      470,
+      744
+    ],
+    "gunNozzleApprox": [
+      225,
+      1060
+    ]
+  },
+  "shot": {
+    "muzzle_flash": "0-80ms sprite and subtle recoil 6-10px",
+    "projectile": "easeOutQuad path from muzzle to impact; 160-250ms; random wobble max 8px",
+    "collision": "main splat then 3-10 secondary droplets; circles expand and flatten in 200-400ms",
+    "trickle": "0-4 paint drips, gravity animation 300-850ms",
+    "reveal": "avatar circular mask reveal 250-400ms; then nickname 200ms",
+    "settle": "glow fade to 0 in 250-700ms; persistent mural remains"
+  },
+  "grenade": {
+    "windup": "hand pulls grenade into camera view 150-220ms",
+    "flight": "parabolic with spin; 400-650ms; no physical explosive effects",
+    "impact": "color-cloud not damage; 250-450ms outward paint droplets",
+    "reveal": "sprite FX and graffiti shape fill-in 350-700ms",
+    "camera": "light shake only for tiers 4+, max 8px; accessibility option 0px",
+    "wall": "do not modify geometry or perspective"
+  },
+  "canSpray": {
+    "start": "switch to aerosol can 180ms",
+    "drawStroke": "paint a circular arc sequentially; 1000-1600ms",
+    "subDrops": "spawn droplets along curve, not at random after finishing",
+    "reveal": "avatar mask and username appear when arc 80-100% complete"
+  },
+  "highTier": "screen-wide rays must stay confined to wall/art layer, do not permanently cover LIVE UI or other people. Final full-wall art stays for configured hold period.",
+  "layerOrder": [
+    "wall",
+    "stain",
+    "avatar",
+    "frame/mural PNG",
+    "username",
+    "dynamic_fx",
+    "fps_weapon_foreground",
+    "interaction UI"
+  ]
+}

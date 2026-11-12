@@ -1,0 +1,378 @@
+{
+  "schemaVersion": "2.2",
+  "sceneRules": {
+    "baseCanvasPx": {
+      "width": 941,
+      "height": 1672
+    },
+    "cameraFixed": true,
+    "staticBackgroundNeverRecreated": true,
+    "wallMaskPx": {
+      "x": 0,
+      "y": 407,
+      "width": 941,
+      "height": 726
+    },
+    "paintAllowedPx": {
+      "left": 20,
+      "top": 470,
+      "right": 921,
+      "bottom": 1095
+    },
+    "forbidPermanentPaintingOn": [
+      "sky",
+      "watchtowers",
+      "floodlights",
+      "railing",
+      "ground"
+    ],
+    "sceneModes": [
+      "COMMUNITY_WALL",
+      "GIFT_SPOTLIGHT_WALL",
+      "TRANSITION",
+      "IDLE"
+    ],
+    "paintLayerOnlyTransition": true,
+    "videoReference": "Original example is 480x1040, 59.27s; confirms FPS paint bursts and progressive paint ring; not gift shot counts."
+  },
+  "communityWall": {
+    "maxDistinctAvatarsPerWall": 6,
+    "hardMaxAvatars": 6,
+    "layout": "3_COLUMNS_2_ROWS",
+    "slots": [
+      {
+        "slotId": 1,
+        "row": 1,
+        "column": 1,
+        "avatarCenterPx": {
+          "x": 170,
+          "y": 620
+        },
+        "avatarDiameterPx": 164,
+        "nicknameCenterPx": {
+          "x": 170,
+          "y": 725
+        },
+        "nicknameMaxWidthPx": 225,
+        "nicknameMaxHeightPx": 48,
+        "finalPaintBoundingBoxPx": {
+          "width": 280,
+          "height": 265
+        },
+        "peakSplashMaxWidthPx": 315,
+        "peakSplashDurationMs": 200
+      },
+      {
+        "slotId": 2,
+        "row": 1,
+        "column": 2,
+        "avatarCenterPx": {
+          "x": 470,
+          "y": 620
+        },
+        "avatarDiameterPx": 164,
+        "nicknameCenterPx": {
+          "x": 470,
+          "y": 725
+        },
+        "nicknameMaxWidthPx": 225,
+        "nicknameMaxHeightPx": 48,
+        "finalPaintBoundingBoxPx": {
+          "width": 280,
+          "height": 265
+        },
+        "peakSplashMaxWidthPx": 315,
+        "peakSplashDurationMs": 200
+      },
+      {
+        "slotId": 3,
+        "row": 1,
+        "column": 3,
+        "avatarCenterPx": {
+          "x": 770,
+          "y": 620
+        },
+        "avatarDiameterPx": 164,
+        "nicknameCenterPx": {
+          "x": 770,
+          "y": 725
+        },
+        "nicknameMaxWidthPx": 225,
+        "nicknameMaxHeightPx": 48,
+        "finalPaintBoundingBoxPx": {
+          "width": 280,
+          "height": 265
+        },
+        "peakSplashMaxWidthPx": 315,
+        "peakSplashDurationMs": 200
+      },
+      {
+        "slotId": 4,
+        "row": 2,
+        "column": 1,
+        "avatarCenterPx": {
+          "x": 170,
+          "y": 915
+        },
+        "avatarDiameterPx": 164,
+        "nicknameCenterPx": {
+          "x": 170,
+          "y": 1020
+        },
+        "nicknameMaxWidthPx": 225,
+        "nicknameMaxHeightPx": 48,
+        "finalPaintBoundingBoxPx": {
+          "width": 280,
+          "height": 265
+        },
+        "peakSplashMaxWidthPx": 315,
+        "peakSplashDurationMs": 200
+      },
+      {
+        "slotId": 5,
+        "row": 2,
+        "column": 2,
+        "avatarCenterPx": {
+          "x": 470,
+          "y": 915
+        },
+        "avatarDiameterPx": 164,
+        "nicknameCenterPx": {
+          "x": 470,
+          "y": 1020
+        },
+        "nicknameMaxWidthPx": 225,
+        "nicknameMaxHeightPx": 48,
+        "finalPaintBoundingBoxPx": {
+          "width": 280,
+          "height": 265
+        },
+        "peakSplashMaxWidthPx": 315,
+        "peakSplashDurationMs": 200
+      },
+      {
+        "slotId": 6,
+        "row": 2,
+        "column": 3,
+        "avatarCenterPx": {
+          "x": 770,
+          "y": 915
+        },
+        "avatarDiameterPx": 164,
+        "nicknameCenterPx": {
+          "x": 770,
+          "y": 1020
+        },
+        "nicknameMaxWidthPx": 225,
+        "nicknameMaxHeightPx": 48,
+        "finalPaintBoundingBoxPx": {
+          "width": 280,
+          "height": 265
+        },
+        "peakSplashMaxWidthPx": 315,
+        "peakSplashDurationMs": 200
+      }
+    ],
+    "slotAssignment": "top row left->right then bottom row left->right (sequential; optional randomized among remaining but preserve no-overlap)",
+    "singleShotPerNewComment": true,
+    "commentCooldownSeconds": 25,
+    "sameUserSameWall": "never allocate second slot; refresh highlight/name only after cooldown; anti-spam",
+    "commentShot": {
+      "intervalMs": null,
+      "projectileTravelMs": [
+        150,
+        230
+      ],
+      "gunRecoilKickMs": 55,
+      "gunRecoilRecoverMs": 90,
+      "muzzlePaintFlashMs": 80,
+      "initialImpactRadiusPx": 12,
+      "peakImpactDiameterPx": [
+        290,
+        315
+      ],
+      "finalSplatDiameterPx": [
+        265,
+        285
+      ],
+      "impactGrowMs": [
+        260,
+        390
+      ],
+      "secondaryDropletsPerShot": [
+        7,
+        13
+      ],
+      "paintDripsPerShot": [
+        2,
+        5
+      ],
+      "avatarFadeMs": 280,
+      "nicknameWriteMs": 190,
+      "totalSceneActionMs": [
+        750,
+        1100
+      ],
+      "floorDrops": {
+        "enabled": true,
+        "visualOnly": true,
+        "maxSmallDropsPerShot": 6,
+        "fadeSeconds": 12
+      },
+      "note": "MỘT VIÊN DUY NHẤT nhưng splash rất lớn như video mẫu. Peak splash can overlap paint only; NEVER cover a neighboring avatar/name."
+    },
+    "afterSixthReveal": {
+      "holdMs": 2500,
+      "transitionToBlankWallMs": 650,
+      "mustWaitForSeventhDistinctValidComment": true,
+      "reason": "At comment number 7, allocate first position of new page only after clean-wall transition",
+      "delayIfGiftCinematicPlaying": true
+    },
+    "newWallPolicy": {
+      "trigger": "6_distinct_slots_filled_AND_next_distinct_valid_user_comment_AND_minimum_hold_complete",
+      "startsEmpty": true,
+      "noCameraMovement": true,
+      "preserveLastPages": 20,
+      "manualPreviousPageAvailable": true,
+      "idleTimeoutSeconds": null
+    },
+    "pauseResumeOnGifts": {
+      "freezePageAndSlots": true,
+      "pauseCommentShowAnimationsIfNeeded": true,
+      "keepCommentsQueued": true,
+      "returnSamePageAndSameSlots": true
+    },
+    "nameRender": {
+      "font": "bold readable graffiti-style sans",
+      "fill": "#FFFFFF",
+      "outline": "#111420",
+      "outlineWidthPx": 3,
+      "allowWrapLines": 2,
+      "ellipsisGraphemeSafe": true
+    },
+    "assetPolicy": "Use existing 28 localized FX splat PNG as building blocks, NOT existing 941x1672 tier artwork for 6 comment wall decals."
+  },
+  "giftWalls": {
+    "oneDedicatedWallPerUniqueUserPerLiveSession": true,
+    "persistentDonorWallKey": "liveSessionId + userId",
+    "reuseAndUpgradeWallOnRepeatGift": true,
+    "oneVisibleDonorPerWall": true,
+    "mustStartFromCleanWallForNewDonor": true,
+    "existingDonorGift": "load that donor wall, resume / layer new graffiti without wiping former earned progress",
+    "commentWallNotAffected": true,
+    "renderAssetUsage": "Use 941x1672 mural PNG with avatar/name coordinates from assets_manifest.json; never compress to community slot",
+    "stageSizeByTierPercentOfPaintableWall": {
+      "tier2": 36,
+      "tier3": 45,
+      "tier4": 56,
+      "tier5": 72,
+      "tier6": 84,
+      "tier7": 95
+    },
+    "giftDisplayHoldSeconds": {
+      "tier2": 2.5,
+      "tier3": 3.0,
+      "tier4": 3.5,
+      "tier5": 4.0,
+      "tier6": 5.0,
+      "tier7": 6.0
+    },
+    "gallery": {
+      "persistGiftWallSnapshots": true,
+      "maxHotTextures": 12,
+      "storeOthersAsCompressedSnapshots": true,
+      "allowReplay": true,
+      "allowViewByDonorUserId": true
+    },
+    "noOverlappingGiftWalls": true,
+    "tierCalculation": "Read price/coins only from verified TikTok connector event data. Coins mapping are configurable examples.",
+    "repeatGiftRule": "Maintain gift totals and wall progress, max achieved tier never decreases; do not invent coins for unavailable gifts."
+  },
+  "wallTransitions": {
+    "sameBackgroundAcrossScenes": true,
+    "animationTargetsOnly": [
+      "paintLayer",
+      "avatarLayer",
+      "nicknameLayer",
+      "wallDecalLayer"
+    ],
+    "neverAnimate": [
+      "sky",
+      "watchtowers",
+      "lamps",
+      "railing",
+      "camera",
+      "ground_perspective"
+    ],
+    "transitions": {
+      "communityFullToBlank": {
+        "mode": "paint_wipe_squeegee_or_soft_dissolve",
+        "durationMs": 650,
+        "minimumShowCompletedWallMs": 2500,
+        "showBlankWallBrieflyMs": 120,
+        "noFullScreenFlash": true
+      },
+      "communityToGiftWall": {
+        "mode": "paint_layer_dissolve_then_blank",
+        "durationMs": 600,
+        "showBlankWallBrieflyMs": 150
+      },
+      "giftToCommunity": {
+        "mode": "paint_layer_dissolve_then_restore_snapshot",
+        "durationMs": 650,
+        "doNotClearCommunityProgress": true
+      },
+      "giftToNextGift": {
+        "mode": "clean_graffiti_layer_only",
+        "durationMs": 650,
+        "showBlankWallBrieflyMs": 150
+      }
+    },
+    "preloadNextScene": true,
+    "avoidFlashes": true,
+    "transitionDisablesIncomingEventCollection": false,
+    "supportLowEndDeviceNoSceneZoom": true
+  },
+  "eventQueueAndFairness": {
+    "singleForegroundCinematicAtOnce": true,
+    "collectEventsAlwaysEvenInTransition": true,
+    "sameUserGiftBurstMergeWindowMs": 500,
+    "dedupeByEventId": true,
+    "comboRepeatDeltaBased": true,
+    "giftPriority": "Higher tier is considered earlier after current animation, but preserve chronology among same tier; never interrupt currently playing cinematic",
+    "preventStarvation": "after 3 back-to-back gift presentations show at least 1 queued community comment or brief resumed wall, unless another VIP urgent action is due",
+    "acknowledgeQueuedGiftImmediately": "nonblocking lightweight ticker",
+    "queueOverflowBehavior": "combine repeated same-user events, shorten idle holds to 1s at most, reduce particle count; NEVER drop verified gifts",
+    "communityCommentsWaitWhileGiftDisplayed": true,
+    "unverifiedCoinPricePolicy": "pending until verified; no guessed coin tier"
+  },
+  "admin": {
+    "communityMaxAvatarOptions": [
+      4,
+      5,
+      6
+    ],
+    "defaultCommunityAvatars": 6,
+    "editable": [
+      "communitySlots",
+      "communityShot.initialImpactRadiusPx",
+      "communityShot.peakImpactDiameterPx",
+      "communityShot.projectileTravelMs",
+      "communityWall.afterSixthReveal.holdMs",
+      "wallTransitions",
+      "giftWalls.giftDisplayHoldSeconds",
+      "eventQueueAndFairness",
+      "videoSpeedMultiplier",
+      "cameraShake",
+      "particleQuality"
+    ],
+    "buttons": [
+      "test comment 1..7",
+      "test repeated comment same user",
+      "test gift pause/resume at 3/6",
+      "test 2 gift donors",
+      "test repeat donor upgrade",
+      "test VIP tier7 full wall"
+    ]
+  }
+}

@@ -1,0 +1,1203 @@
+{
+  "format": "MT Graffiti War Asset Expansion V2",
+  "canvas": {
+    "width": 941,
+    "height": 1672
+  },
+  "wall_safe_area": {
+    "xMin": 90,
+    "xMax": 855,
+    "yMin": 485,
+    "yMax": 1070
+  },
+  "tiers": [
+    {
+      "tier": 1,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 745,
+        "radius": 45
+      },
+      "username": {
+        "center_x": 476,
+        "center_y": 799,
+        "max_width": 132
+      },
+      "threshold": "comment"
+    },
+    {
+      "tier": 2,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 744,
+        "radius": 49
+      },
+      "username": {
+        "center_x": 473,
+        "center_y": 815,
+        "max_width": 182
+      },
+      "threshold": "1 coin"
+    },
+    {
+      "tier": 3,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 742,
+        "radius": 53
+      },
+      "username": {
+        "center_x": 481,
+        "center_y": 820,
+        "max_width": 205
+      },
+      "threshold": "5 coins"
+    },
+    {
+      "tier": 4,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 733,
+        "radius": 64
+      },
+      "username": {
+        "center_x": 509,
+        "center_y": 816,
+        "max_width": 247
+      },
+      "threshold": "20 coins"
+    },
+    {
+      "tier": 5,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 729,
+        "radius": 70
+      },
+      "username": {
+        "center_x": 465,
+        "center_y": 840,
+        "max_width": 278
+      },
+      "threshold": "100 coins"
+    },
+    {
+      "tier": 6,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 715,
+        "radius": 78
+      },
+      "username": {
+        "center_x": 471,
+        "center_y": 828,
+        "max_width": 318
+      },
+      "threshold": "500 coins"
+    },
+    {
+      "tier": 7,
+      "avatar": {
+        "center_x": 470,
+        "center_y": 716,
+        "radius": 66
+      },
+      "username": {
+        "center_x": 474,
+        "center_y": 790,
+        "max_width": 227
+      },
+      "threshold": "1000+ coins"
+    }
+  ],
+  "skins": [
+    "NEON_POP",
+    "ACID_LIME",
+    "FIRE_ICE",
+    "ULTRAVIOLET",
+    "RAINBOW_STREET"
+  ],
+  "frame_variants": [
+    {
+      "tier": 1,
+      "file": "01_Binh_Luan.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 745,
+        "radius": 45
+      },
+      "username": {
+        "center_x": 476,
+        "center_y": 799,
+        "max_width": 132
+      },
+      "threshold": "comment",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B01.png"
+    },
+    {
+      "tier": 2,
+      "file": "02_1_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 744,
+        "radius": 49
+      },
+      "username": {
+        "center_x": 473,
+        "center_y": 815,
+        "max_width": 182
+      },
+      "threshold": "1 coin",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B02.png"
+    },
+    {
+      "tier": 3,
+      "file": "03_5_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 742,
+        "radius": 53
+      },
+      "username": {
+        "center_x": 481,
+        "center_y": 820,
+        "max_width": 205
+      },
+      "threshold": "5 coins",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B03.png"
+    },
+    {
+      "tier": 4,
+      "file": "04_20_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 733,
+        "radius": 64
+      },
+      "username": {
+        "center_x": 509,
+        "center_y": 816,
+        "max_width": 247
+      },
+      "threshold": "20 coins",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B04.png"
+    },
+    {
+      "tier": 5,
+      "file": "05_100_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 729,
+        "radius": 70
+      },
+      "username": {
+        "center_x": 465,
+        "center_y": 840,
+        "max_width": 278
+      },
+      "threshold": "100 coins",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B05.png"
+    },
+    {
+      "tier": 6,
+      "file": "06_500_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 715,
+        "radius": 78
+      },
+      "username": {
+        "center_x": 471,
+        "center_y": 828,
+        "max_width": 318
+      },
+      "threshold": "500 coins",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B06.png"
+    },
+    {
+      "tier": 7,
+      "file": "07_1000_Xu_VIP_PRO.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 716,
+        "radius": 66
+      },
+      "username": {
+        "center_x": 474,
+        "center_y": 790,
+        "max_width": 227
+      },
+      "threshold": "1000+ coins",
+      "skin": "NEON_POP",
+      "asset": "NEON_POP_B07.png"
+    },
+    {
+      "tier": 1,
+      "file": "01_Binh_Luan.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 745,
+        "radius": 45
+      },
+      "username": {
+        "center_x": 476,
+        "center_y": 799,
+        "max_width": 132
+      },
+      "threshold": "comment",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B01.png"
+    },
+    {
+      "tier": 2,
+      "file": "02_1_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 744,
+        "radius": 49
+      },
+      "username": {
+        "center_x": 473,
+        "center_y": 815,
+        "max_width": 182
+      },
+      "threshold": "1 coin",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B02.png"
+    },
+    {
+      "tier": 3,
+      "file": "03_5_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 742,
+        "radius": 53
+      },
+      "username": {
+        "center_x": 481,
+        "center_y": 820,
+        "max_width": 205
+      },
+      "threshold": "5 coins",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B03.png"
+    },
+    {
+      "tier": 4,
+      "file": "04_20_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 733,
+        "radius": 64
+      },
+      "username": {
+        "center_x": 509,
+        "center_y": 816,
+        "max_width": 247
+      },
+      "threshold": "20 coins",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B04.png"
+    },
+    {
+      "tier": 5,
+      "file": "05_100_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 729,
+        "radius": 70
+      },
+      "username": {
+        "center_x": 465,
+        "center_y": 840,
+        "max_width": 278
+      },
+      "threshold": "100 coins",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B05.png"
+    },
+    {
+      "tier": 6,
+      "file": "06_500_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 715,
+        "radius": 78
+      },
+      "username": {
+        "center_x": 471,
+        "center_y": 828,
+        "max_width": 318
+      },
+      "threshold": "500 coins",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B06.png"
+    },
+    {
+      "tier": 7,
+      "file": "07_1000_Xu_VIP_PRO.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 716,
+        "radius": 66
+      },
+      "username": {
+        "center_x": 474,
+        "center_y": 790,
+        "max_width": 227
+      },
+      "threshold": "1000+ coins",
+      "skin": "ACID_LIME",
+      "asset": "ACID_LIME_B07.png"
+    },
+    {
+      "tier": 1,
+      "file": "01_Binh_Luan.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 745,
+        "radius": 45
+      },
+      "username": {
+        "center_x": 476,
+        "center_y": 799,
+        "max_width": 132
+      },
+      "threshold": "comment",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B01.png"
+    },
+    {
+      "tier": 2,
+      "file": "02_1_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 744,
+        "radius": 49
+      },
+      "username": {
+        "center_x": 473,
+        "center_y": 815,
+        "max_width": 182
+      },
+      "threshold": "1 coin",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B02.png"
+    },
+    {
+      "tier": 3,
+      "file": "03_5_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 742,
+        "radius": 53
+      },
+      "username": {
+        "center_x": 481,
+        "center_y": 820,
+        "max_width": 205
+      },
+      "threshold": "5 coins",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B03.png"
+    },
+    {
+      "tier": 4,
+      "file": "04_20_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 733,
+        "radius": 64
+      },
+      "username": {
+        "center_x": 509,
+        "center_y": 816,
+        "max_width": 247
+      },
+      "threshold": "20 coins",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B04.png"
+    },
+    {
+      "tier": 5,
+      "file": "05_100_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 729,
+        "radius": 70
+      },
+      "username": {
+        "center_x": 465,
+        "center_y": 840,
+        "max_width": 278
+      },
+      "threshold": "100 coins",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B05.png"
+    },
+    {
+      "tier": 6,
+      "file": "06_500_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 715,
+        "radius": 78
+      },
+      "username": {
+        "center_x": 471,
+        "center_y": 828,
+        "max_width": 318
+      },
+      "threshold": "500 coins",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B06.png"
+    },
+    {
+      "tier": 7,
+      "file": "07_1000_Xu_VIP_PRO.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 716,
+        "radius": 66
+      },
+      "username": {
+        "center_x": 474,
+        "center_y": 790,
+        "max_width": 227
+      },
+      "threshold": "1000+ coins",
+      "skin": "FIRE_ICE",
+      "asset": "FIRE_ICE_B07.png"
+    },
+    {
+      "tier": 1,
+      "file": "01_Binh_Luan.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 745,
+        "radius": 45
+      },
+      "username": {
+        "center_x": 476,
+        "center_y": 799,
+        "max_width": 132
+      },
+      "threshold": "comment",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B01.png"
+    },
+    {
+      "tier": 2,
+      "file": "02_1_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 744,
+        "radius": 49
+      },
+      "username": {
+        "center_x": 473,
+        "center_y": 815,
+        "max_width": 182
+      },
+      "threshold": "1 coin",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B02.png"
+    },
+    {
+      "tier": 3,
+      "file": "03_5_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 742,
+        "radius": 53
+      },
+      "username": {
+        "center_x": 481,
+        "center_y": 820,
+        "max_width": 205
+      },
+      "threshold": "5 coins",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B03.png"
+    },
+    {
+      "tier": 4,
+      "file": "04_20_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 733,
+        "radius": 64
+      },
+      "username": {
+        "center_x": 509,
+        "center_y": 816,
+        "max_width": 247
+      },
+      "threshold": "20 coins",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B04.png"
+    },
+    {
+      "tier": 5,
+      "file": "05_100_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 729,
+        "radius": 70
+      },
+      "username": {
+        "center_x": 465,
+        "center_y": 840,
+        "max_width": 278
+      },
+      "threshold": "100 coins",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B05.png"
+    },
+    {
+      "tier": 6,
+      "file": "06_500_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 715,
+        "radius": 78
+      },
+      "username": {
+        "center_x": 471,
+        "center_y": 828,
+        "max_width": 318
+      },
+      "threshold": "500 coins",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B06.png"
+    },
+    {
+      "tier": 7,
+      "file": "07_1000_Xu_VIP_PRO.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 716,
+        "radius": 66
+      },
+      "username": {
+        "center_x": 474,
+        "center_y": 790,
+        "max_width": 227
+      },
+      "threshold": "1000+ coins",
+      "skin": "ULTRAVIOLET",
+      "asset": "ULTRAVIOLET_B07.png"
+    },
+    {
+      "tier": 1,
+      "file": "01_Binh_Luan.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 745,
+        "radius": 45
+      },
+      "username": {
+        "center_x": 476,
+        "center_y": 799,
+        "max_width": 132
+      },
+      "threshold": "comment",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B01.png"
+    },
+    {
+      "tier": 2,
+      "file": "02_1_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 744,
+        "radius": 49
+      },
+      "username": {
+        "center_x": 473,
+        "center_y": 815,
+        "max_width": 182
+      },
+      "threshold": "1 coin",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B02.png"
+    },
+    {
+      "tier": 3,
+      "file": "03_5_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 742,
+        "radius": 53
+      },
+      "username": {
+        "center_x": 481,
+        "center_y": 820,
+        "max_width": 205
+      },
+      "threshold": "5 coins",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B03.png"
+    },
+    {
+      "tier": 4,
+      "file": "04_20_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 733,
+        "radius": 64
+      },
+      "username": {
+        "center_x": 509,
+        "center_y": 816,
+        "max_width": 247
+      },
+      "threshold": "20 coins",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B04.png"
+    },
+    {
+      "tier": 5,
+      "file": "05_100_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 729,
+        "radius": 70
+      },
+      "username": {
+        "center_x": 465,
+        "center_y": 840,
+        "max_width": 278
+      },
+      "threshold": "100 coins",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B05.png"
+    },
+    {
+      "tier": 6,
+      "file": "06_500_Xu.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 715,
+        "radius": 78
+      },
+      "username": {
+        "center_x": 471,
+        "center_y": 828,
+        "max_width": 318
+      },
+      "threshold": "500 coins",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B06.png"
+    },
+    {
+      "tier": 7,
+      "file": "07_1000_Xu_VIP_PRO.png",
+      "canvas": {
+        "width": 941,
+        "height": 1672
+      },
+      "avatar": {
+        "center_x": 470,
+        "center_y": 716,
+        "radius": 66
+      },
+      "username": {
+        "center_x": 474,
+        "center_y": 790,
+        "max_width": 227
+      },
+      "threshold": "1000+ coins",
+      "skin": "RAINBOW_STREET",
+      "asset": "RAINBOW_STREET_B07.png"
+    }
+  ],
+  "guns": [
+    {
+      "id": "01_RAINBOW_BURST",
+      "display_name": "Rainbow Burst",
+      "base_shape": 0,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "02_ACID_SHOCK",
+      "display_name": "Acid Shock",
+      "base_shape": 1,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "03_POPSTAR",
+      "display_name": "Popstar",
+      "base_shape": 1,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "04_FIRE_DRIP",
+      "display_name": "Fire Drip",
+      "base_shape": 0,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "05_OCEAN_WAVE",
+      "display_name": "Ocean Wave",
+      "base_shape": 1,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "06_VIOLET_RAVE",
+      "display_name": "Violet Rave",
+      "base_shape": 0,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "07_NEON_CANDY",
+      "display_name": "Neon Candy",
+      "base_shape": 0,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "08_TOXIC_CITY",
+      "display_name": "Toxic City",
+      "base_shape": 1,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "09_GOLD_SPLAT",
+      "display_name": "Gold Splat",
+      "base_shape": 0,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    },
+    {
+      "id": "10_HYPER_GRAFFITI",
+      "display_name": "Hyper Graffiti",
+      "base_shape": 1,
+      "native_size": [
+        1448,
+        1086
+      ],
+      "overlay_size": [
+        941,
+        1672
+      ],
+      "anchor": "bottom-right",
+      "note": "Transparent PNG variant reskin from two FPS rifle silhouettes; not ten independently sculpted gun models."
+    }
+  ],
+  "grenades": [
+    {
+      "id": "01_PINK_POP",
+      "name": "Pink Pop"
+    },
+    {
+      "id": "02_RAINBOW_ORB",
+      "name": "Rainbow Orb"
+    },
+    {
+      "id": "03_TOXIC_SLIME",
+      "name": "Toxic Slime"
+    },
+    {
+      "id": "04_CANDY_CLOUD",
+      "name": "Candy Cloud"
+    },
+    {
+      "id": "05_CYAN_BURST",
+      "name": "Cyan Burst"
+    },
+    {
+      "id": "06_PURPLE_BASS",
+      "name": "Purple Bass"
+    },
+    {
+      "id": "07_FIRE_BLAST",
+      "name": "Fire Blast"
+    },
+    {
+      "id": "08_DRAGON_DRIP",
+      "name": "Dragon Drip"
+    },
+    {
+      "id": "09_PHOENIX_BOOM",
+      "name": "Phoenix Boom"
+    },
+    {
+      "id": "10_VIP_MEGA_COLOR",
+      "name": "VIP Mega Color"
+    }
+  ],
+  "fx": [
+    {
+      "file": "FX_01_01.png",
+      "intensity": 1,
+      "palette": 1
+    },
+    {
+      "file": "FX_01_02.png",
+      "intensity": 2,
+      "palette": 1
+    },
+    {
+      "file": "FX_01_03.png",
+      "intensity": 3,
+      "palette": 1
+    },
+    {
+      "file": "FX_01_04.png",
+      "intensity": 4,
+      "palette": 1
+    },
+    {
+      "file": "FX_02_01.png",
+      "intensity": 1,
+      "palette": 2
+    },
+    {
+      "file": "FX_02_02.png",
+      "intensity": 2,
+      "palette": 2
+    },
+    {
+      "file": "FX_02_03.png",
+      "intensity": 3,
+      "palette": 2
+    },
+    {
+      "file": "FX_02_04.png",
+      "intensity": 4,
+      "palette": 2
+    },
+    {
+      "file": "FX_03_01.png",
+      "intensity": 1,
+      "palette": 3
+    },
+    {
+      "file": "FX_03_02.png",
+      "intensity": 2,
+      "palette": 3
+    },
+    {
+      "file": "FX_03_03.png",
+      "intensity": 3,
+      "palette": 3
+    },
+    {
+      "file": "FX_03_04.png",
+      "intensity": 4,
+      "palette": 3
+    },
+    {
+      "file": "FX_04_01.png",
+      "intensity": 1,
+      "palette": 4
+    },
+    {
+      "file": "FX_04_02.png",
+      "intensity": 2,
+      "palette": 4
+    },
+    {
+      "file": "FX_04_03.png",
+      "intensity": 3,
+      "palette": 4
+    },
+    {
+      "file": "FX_04_04.png",
+      "intensity": 4,
+      "palette": 4
+    },
+    {
+      "file": "FX_05_01.png",
+      "intensity": 1,
+      "palette": 5
+    },
+    {
+      "file": "FX_05_02.png",
+      "intensity": 2,
+      "palette": 5
+    },
+    {
+      "file": "FX_05_03.png",
+      "intensity": 3,
+      "palette": 5
+    },
+    {
+      "file": "FX_05_04.png",
+      "intensity": 4,
+      "palette": 5
+    },
+    {
+      "file": "FX_06_01.png",
+      "intensity": 1,
+      "palette": 6
+    },
+    {
+      "file": "FX_06_02.png",
+      "intensity": 2,
+      "palette": 6
+    },
+    {
+      "file": "FX_06_03.png",
+      "intensity": 3,
+      "palette": 6
+    },
+    {
+      "file": "FX_06_04.png",
+      "intensity": 4,
+      "palette": 6
+    },
+    {
+      "file": "FX_07_01.png",
+      "intensity": 1,
+      "palette": 7
+    },
+    {
+      "file": "FX_07_02.png",
+      "intensity": 2,
+      "palette": 7
+    },
+    {
+      "file": "FX_07_03.png",
+      "intensity": 3,
+      "palette": 7
+    },
+    {
+      "file": "FX_07_04.png",
+      "intensity": 4,
+      "palette": 7
+    }
+  ],
+  "layer_order": [
+    "wall",
+    "background_spatters",
+    "avatar_circle_clipped",
+    "graffiti_overlay_png",
+    "dynamic_username",
+    "dynamic_particles",
+    "weapon_hands_front",
+    "livestream_ui"
+  ]
+}
