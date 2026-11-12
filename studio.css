@@ -67,3 +67,5 @@ main{padding:14px}.card{border-radius:12px;padding:14px;margin-bottom:12px}
 .guide-step{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:#e6efff;color:#164bb2;font-weight:800}
 @media(max-width:860px){.shell,.nav-hidden .shell{grid-template-columns:minmax(0,1fr)}header{grid-column:1;flex-wrap:wrap}.preview{position:static}.preview-screen{width:min(100%,280px)}main{padding:10px}}
 @media(min-width:861px){.preview-screen{width:min(100%,calc((100dvh - 238px)*.5625))}.preview .actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.preview .actions button{padding-inline:5px}}
+
+.connect .sectionline{flex-wrap:wrap}#status{max-width:100%;overflow-wrap:anywhere}#status[data-state=error]{color:#a31a35;background:#fff1f4;border-color:#ecc1ca}#status[data-state=waiting],#status[data-state=connected]{color:#176347;background:#e9f8ef;border-color:#b3e0c6}

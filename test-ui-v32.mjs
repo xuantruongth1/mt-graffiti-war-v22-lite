@@ -4,7 +4,7 @@ import {resolve,join} from 'node:path';
 import {tmpdir} from 'node:os';
 const {chromium}=await import(process.env.GRAFFITI_PLAYWRIGHT||'playwright');
 process.env.GRAFFITI_DATA=await mkdtemp(join(tmpdir(),'graffiti-v32-'));
-delete process.env.GRAFFITI_CONNECTOR;
+process.env.GRAFFITI_CONNECTOR=join(process.env.GRAFFITI_DATA,'adapter-khong-ton-tai.mjs');
 const output=process.argv[2]??join(process.env.GRAFFITI_DATA,'screenshots');
 await mkdir(output,{recursive:true});
 process.env.GRAFFITI_PORT='0';

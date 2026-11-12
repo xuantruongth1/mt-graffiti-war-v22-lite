@@ -2,7 +2,7 @@
 
 - Bản web: chạy **start.bat** bằng Node.js 22 trở lên rồi mở **http://127.0.0.1:3197/**. Trong OBS hoặc TikTok LIVE Studio, dùng link từ nút **Sao chép link LIVE**, nguồn trình duyệt 1080 × 1920.
 - Bản Windows: mở **MT Graffiti War V3.2.exe** trong thư mục **MT-Graffiti-V3.2-Portable**. Giữ nguyên các tệp và thư mục đi cùng EXE. Launcher mở bảng điều khiển trong trình duyệt mặc định. Giữ cửa sổ launcher mở khi dùng Phòng thử hoặc LIVE. Launcher mặc định dùng http://127.0.0.1:3197/. Nếu đã mở Studio từ bản cũ, hãy mở lại bằng nút trong launcher V3 để chuyển sang địa chỉ này.
-• Adapter LIVE là tùy chọn. Đặt GRAFFITI_CONNECTOR trỏ tới DirectLive module, GRAFFITI_CATALOG trỏ đến catalog.json nếu có. Studio và DEMO chạy khi chưa cấu hình adapter.
+- Bản portable kèm adapter và thư viện TikTok. Mở EXE rồi nhập tên TikTok trong Studio. Với mã nguồn chạy trực tiếp, chạy `npm ci --prefix adapter` một lần trước khi kết nối. `GRAFFITI_CONNECTOR` chỉ dùng khi cần chọn adapter khác.
 - Cấu hình tự lưu trong thư mục dữ liệu cục bộ. **Hiệu ứng & bố cục** có nút sao lưu và khôi phục JSON.
 
 ## Bảy bậc mặc định

@@ -234,6 +234,7 @@ function renderList(id,items,format){
 function render(){
  if(!liveState)return;const s=liveState;
  $('status').textContent=s.status;
+ $('status').dataset.state=s.connection?.state??'idle';
  $('pause-live').disabled=s.paused;$('resume-live').disabled=!s.paused;
  $('m-marks').textContent=s.communityCount+' / '+s.config.max;$('m-queue').textContent=s.queue;$('m-round').textContent=s.round;
  renderList('top-list',s.top,x=>x.name+' · '+x.coins.toLocaleString('vi-VN')+' xu');

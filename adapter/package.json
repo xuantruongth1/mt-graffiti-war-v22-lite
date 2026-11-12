@@ -1,0 +1,7 @@
+{
+  "name": "mai-truong-live-connection",
+  "private": true,
+  "type": "module",
+  "dependencies": { "tiktok-live-connector": "2.5.0" },
+  "scripts": { "test": "node --test test/*.test.mjs" }
+}
